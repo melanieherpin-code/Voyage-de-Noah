@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mission 1 – La fiche piégée · Le Voyage de Noah</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --nuit: #12143B;
+    --bouton: #3A64AF;
+    --bouton-survol: #2B4F91;
+    --fond: #EDF0F2;
+    --carte: #FFFFFF;
+    --texte: #000000;
+    --texte-doux: #45597B;
+    --ok: #B0CE8B;
+    --ok-fond: #EAF3DF;
+    --erreur: #F6D5D2;
+    --erreur-bord: #B3261E;
+    --focus: #FFB000;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Libre Franklin", "Franklin Gothic Book", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    color: var(--texte);
+    background: var(--fond);
+  }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  /* Bandeau */
+  header { background: var(--nuit); color: #fff; padding: 20px 24px; }
+  .fil { margin: 0 0 4px; font-size: 14px; letter-spacing: .03em; color: #DDE3F0; }
+  header h1 { margin: 0; font-size: 30px; font-weight: 800; line-height: 1.2; }
+  .objectif { margin: 6px 0 0; font-size: 17px; }
+  .duree { margin: 4px 0 0; font-size: 15px; color: #DDE3F0; }
+
+  /* Progression */
+  nav.etapes { background: #fff; border-bottom: 1px solid #C9D0DA; }
+  nav.etapes ol { list-style: none; display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 0 auto; padding: 12px 24px; max-width: 1150px; }
+  nav.etapes li { font-size: 15px; color: var(--texte-doux); }
+  nav.etapes li[aria-current="step"] { color: var(--nuit); font-weight: 800; text-decoration: underline; text-underline-offset: 4px; }
+  nav.etapes li.faite { color: #2F5D1E; }
+
+  main { max-width: 1150px; margin: 0 auto; padding: 24px; }
+  h2 { font-size: 24px; margin: 0 0 8px; color: var(--nuit); }
+  h3 { font-size: 18px; margin: 0 0 8px; color: var(--nuit); }
+
+  .noah { background: #fff; border-left: 6px solid var(--nuit); padding: 12px 16px; margin: 0 0 16px; font-style: italic; }
+  .noah strong { font-style: normal; }
+  .consigne { background: #fff; border: 2px solid var(--bouton); border-radius: 8px; padding: 12px 16px; margin: 0 0 16px; }
+  .consigne h3 { margin-bottom: 4px; }
+  .consigne p { margin: 0; }
+  .methode { background: #fff; border-radius: 8px; padding: 10px 16px; margin: 0 0 20px; font-size: 15px; }
+  .methode ol { margin: 4px 0 0; padding-left: 22px; }
+
+  .colonnes { display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 860px) { .colonnes { grid-template-columns: 1fr; } }
+  .carte { background: var(--carte); border-radius: 8px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(18,20,59,.15); }
+
+  /* Fiche générée par l'IA */
+  .fiche-entete { font-size: 14px; color: var(--texte-doux); margin: 0 0 8px; }
+  .fiche-titre { font-size: 20px; font-weight: 800; margin: 0 0 10px; }
+  .phrases { list-style: none; margin: 0; padding: 0; }
+  .phrases li { margin: 0 0 8px; }
+  .phrase {
+    display: block; width: 100%; text-align: left; font: inherit; color: inherit;
+    background: #F7F8FA; border: 2px solid #C9D0DA; border-radius: 6px; padding: 8px 10px; cursor: pointer;
+  }
+  .phrase:hover { border-color: var(--bouton); }
+  .phrase[aria-pressed="true"] { border-color: var(--bouton); background: #E4EBF7; }
+  .phrase.exacte { background: var(--ok-fond); border-color: #7FA35A; }
+  .phrase.inventee { background: var(--erreur); border-color: var(--erreur-bord); text-decoration: line-through; text-decoration-thickness: 1px; }
+  .etiquette { display: inline-block; margin-left: 6px; font-size: 13px; font-weight: 600; text-decoration: none; padding: 0 6px; border-radius: 4px; background: #fff; border: 1px solid currentColor; }
+  .compteur { font-weight: 600; margin: 12px 0 0; }
+
+  /* Panneau de vérification et recherche */
+  .bloc { border-top: 1px solid #DDE1E7; padding-top: 12px; margin-top: 12px; }
+  .bloc:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
+  .requete { font-weight: 600; background: #F7F8FA; padding: 6px 10px; border-radius: 4px; display: inline-block; }
+  .resultats { list-style: none; margin: 8px 0 0; padding: 0; }
+  .resultat { border: 1px solid #C9D0DA; border-radius: 6px; padding: 10px 12px; margin: 0 0 8px; background: #fff; }
+  .resultat .source { font-weight: 800; margin: 0; }
+  .resultat .type { font-size: 13px; margin: 0 0 4px; color: var(--texte-doux); }
+  .resultat .type.douteux { color: var(--erreur-bord); font-weight: 600; }
+  .resultat p.extrait { margin: 0; }
+  .avertissement { font-size: 13px; color: var(--texte-doux); margin-top: 10px; }
+
+  .recherche { display: flex; gap: 8px; flex-wrap: wrap; }
+  .recherche input { flex: 1 1 200px; font: inherit; padding: 8px 10px; border: 2px solid #8A96A8; border-radius: 6px; }
+  .suggestion { font-size: 14px; color: var(--texte-doux); margin: 6px 0 0; }
+
+  /* Boutons */
+  .btn { font: inherit; font-weight: 600; border: 0; border-radius: 6px; padding: 10px 16px; cursor: pointer; background: var(--bouton); color: #fff; }
+  .btn:hover { background: var(--bouton-survol); }
+  .btn[disabled] { background: #9AA6B8; color: #fff; cursor: not-allowed; }
+  .btn.secondaire { background: #fff; color: var(--bouton); border: 2px solid var(--bouton); }
+  .btn.secondaire:hover { background: #E4EBF7; }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  .suite { display: flex; justify-content: flex-end; margin-top: 20px; }
+
+  /* Feedback */
+  .feedback { border-radius: 6px; padding: 10px 14px; margin-top: 12px; }
+  .feedback:empty { display: none; }
+  .feedback.bon { background: var(--ok-fond); border-left: 6px solid #4E7A2C; }
+  .feedback.faux { background: var(--erreur); border-left: 6px solid var(--erreur-bord); }
+  .feedback.info { background: #E4EBF7; border-left: 6px solid var(--bouton); }
+  .feedback p { margin: 0 0 4px; }
+  .feedback p:last-child { margin-bottom: 0; }
+
+  /* Étape 3 */
+  fieldset { border: 0; margin: 0 0 10px; padding: 0; }
+  legend { font-weight: 600; margin-bottom: 6px; padding: 0; }
+  .choix label { display: block; padding: 6px 10px; margin: 0 0 6px; border: 1px solid #C9D0DA; border-radius: 6px; background: #F7F8FA; cursor: pointer; }
+  .choix input { margin-right: 8px; }
+  .item { margin-bottom: 18px; }
+  .item .citation { background: var(--erreur); padding: 8px 12px; border-radius: 6px; margin: 0 0 10px; }
+
+  .fiche-corrigee li { margin-bottom: 6px; }
+  .corrige { background: var(--ok-fond); padding: 0 4px; border-radius: 3px; }
+  [hidden] { display: none !important; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<header>
+  <p class="fil">Le Voyage de Noah · Chapitre 3 : Le labyrinthe des illusions</p>
+  <h1>Mission 1 : La fiche piégée</h1>
+  <p class="objectif">Objectif : repérer les informations inventées par une IA et les vérifier avec des sources fiables.</p>
+  <p class="duree">Durée de l’activité : 30 min</p>
+</header>
+
+<nav class="etapes" aria-label="Progression de l’activité">
+  <ol>
+    <li id="nav-1" aria-current="step">Étape 1 sur 3 : Vérifier avec Noah</li>
+    <li id="nav-2">Étape 2 sur 3 : Vérifier seul</li>
+    <li id="nav-3">Étape 3 sur 3 : Réparer la fiche</li>
+  </ol>
+</nav>
+
+<main>
+  <p class="sr-only" id="annonce" aria-live="polite"></p>
+
+  <!-- ===================== ÉTAPE 1 ===================== -->
+  <section id="etape-1" aria-labelledby="titre-1">
+    <h2 id="titre-1" tabindex="-1">Étape 1 : Vérifier avec Noah</h2>
+    <p class="noah"><strong>Noah :</strong> « Pour ouvrir la première porte du labyrinthe, je dois valider cette fiche sur Thomas Pesquet. Une IA l’a écrite en deux secondes… Vérifions-la ensemble, phrase par phrase. »</p>
+
+    <div class="consigne">
+      <h3>Consigne</h3>
+      <p>Clique sur une phrase de la fiche. Lis les résultats de recherche, puis indique si l’information est exacte ou inventée. Trouve les <strong>3 informations inventées</strong> pour continuer.</p>
+    </div>
+
+    <div class="methode" aria-label="Rappel de la méthode">
+      <strong>La méthode « Je vérifie »</strong>
+      <ol>
+        <li>Je <strong>repère</strong> l’information à vérifier.</li>
+        <li>Je la <strong>cherche</strong> dans une source fiable.</li>
+        <li>Je <strong>croise</strong> au moins deux sources.</li>
+      </ol>
+    </div>
+
+    <div class="colonnes">
+      <div class="carte">
+        <p class="fiche-entete">Réponse générée par une IA</p>
+        <p class="fiche-titre">Fiche : Thomas Pesquet</p>
+        <ul class="phrases" id="fiche-1"></ul>
+        <p class="compteur" id="compteur-1"></p>
+      </div>
+
+      <div class="carte" id="panneau-1" aria-live="polite">
+        <p>Clique sur une phrase de la fiche pour lancer la vérification.</p>
+      </div>
+    </div>
+
+    <div class="suite">
+      <button class="btn" id="suivant-1" disabled>Passer à l’étape 2</button>
+    </div>
+  </section>
+
+  <!-- ===================== ÉTAPE 2 ===================== -->
+  <section id="etape-2" aria-labelledby="titre-2" hidden>
+    <h2 id="titre-2" tabindex="-1">Étape 2 : Vérifier seul</h2>
+    <p class="noah"><strong>Noah :</strong> « Bien joué ! La porte s’ouvre… sur une deuxième fiche, cette fois sur Fortnite. À toi de mener l’enquête : utilise le moteur de recherche du labyrinthe. »</p>
+
+    <div class="consigne">
+      <h3>Consigne</h3>
+      <p>Cette fiche contient <strong>5 informations inventées</strong>. Fais tes propres recherches avec des mots-clés, puis clique sur chaque phrase inventée pour la signaler. Quand tu as terminé, clique sur « Valider la fiche ».</p>
+    </div>
+
+    <div class="methode" aria-label="Rappel de la méthode">
+      <strong>La méthode « Je vérifie »</strong> : je <strong>repère</strong>, je <strong>cherche</strong> dans une source fiable, je <strong>croise</strong> au moins deux sources. Attention : toutes les sources ne se valent pas !
+    </div>
+
+    <div class="colonnes">
+      <div class="carte">
+        <p class="fiche-entete">Réponse générée par une IA</p>
+        <p class="fiche-titre">Fiche : Fortnite</p>
+        <ul class="phrases" id="fiche-2"></ul>
+        <p class="compteur" id="compteur-2"></p>
+        <div class="actions">
+          <button class="btn" id="valider-2">Valider la fiche</button>
+        </div>
+        <div class="feedback" id="feedback-2" aria-live="polite"></div>
+      </div>
+
+      <div class="carte">
+        <h3><label for="champ-recherche">Moteur de recherche du labyrinthe</label></h3>
+        <form class="recherche" id="form-recherche">
+          <input type="search" id="champ-recherche" autocomplete="off" aria-describedby="aide-recherche">
+          <button class="btn" type="submit">Rechercher</button>
+        </form>
+        <p class="suggestion" id="aide-recherche">Tape quelques mots-clés, par exemple : « Fortnite créateur » ou « Fortnite âge ».</p>
+        <div id="zone-resultats" aria-live="polite"></div>
+        <p class="avertissement">Les résultats sont simulés pour l’activité : les extraits sont reformulés à partir de sources réelles.</p>
+      </div>
+    </div>
+
+    <div class="suite">
+      <button class="btn" id="suivant-2" disabled>Passer à l’étape 3</button>
+    </div>
+  </section>
+
+  <!-- ===================== ÉTAPE 3 ===================== -->
+  <section id="etape-3" aria-labelledby="titre-3" hidden>
+    <h2 id="titre-3" tabindex="-1">Étape 3 : Réparer la fiche</h2>
+    <p class="noah"><strong>Noah :</strong> « Tu as démasqué les 5 hallucinations ! Maintenant, il faut réparer la fiche pour que personne ne se fasse piéger. »</p>
+
+    <div class="consigne">
+      <h3>Consigne</h3>
+      <p>Pour chaque information inventée, choisis la <strong>phrase correcte</strong> et la <strong>source la plus fiable</strong> qui le prouve. Tu peux revenir au moteur de recherche de l’étape 2 si besoin. Il faut au moins <strong>4 réparations justes sur 5</strong> pour réussir la mission.</p>
+    </div>
+
+    <form class="carte" id="form-reparer">
+      <div id="items-3"></div>
+      <div class="actions">
+        <button class="btn" type="submit">Vérifier mes réparations</button>
+        <button class="btn secondaire" type="button" id="retour-recherche">Revoir le moteur de recherche</button>
+      </div>
+      <div class="feedback" id="feedback-3" aria-live="polite"></div>
+    </form>
+  </section>
+
+  <!-- ===================== FIN ===================== -->
+  <section id="fin" aria-labelledby="titre-fin" hidden>
+    <h2 id="titre-fin" tabindex="-1">Mission réussie !</h2>
+    <p class="noah"><strong>Noah :</strong> « Grâce à toi, la fiche est réparée et la porte s’ouvre. Je retiens la leçon : une réponse d’IA qui a l’air sûre d’elle n’est pas forcément vraie ! »</p>
+    <div class="carte">
+      <h3>La fiche réparée : Fortnite</h3>
+      <ul class="fiche-corrigee" id="fiche-corrigee"></ul>
+    </div>
+    <div class="consigne" style="margin-top:16px">
+      <h3>Et maintenant ?</h3>
+      <p>Ferme cet onglet et retourne sur le site du Voyage de Noah pour lire « Ce que Noah a découvert ».</p>
+    </div>
+  </section>
+</main>
+
+<script>
+/* ---------- Données : étape 1 (fiche guidée) ---------- */
+const SOURCES = {
+  esa: { source: "Agence spatiale européenne (esa.int)", type: "Organisme officiel" },
+  cnes: { source: "CNES – Centre national d’études spatiales (cnes.fr)", type: "Organisme officiel" },
+  encyclo: { source: "Encyclopédie en ligne", type: "Encyclopédie" }
+};
+
+const FICHE1 = [
+  { texte: "Thomas Pesquet est un astronaute français de l’Agence spatiale européenne (ESA).", invente: false,
+    requete: "Thomas Pesquet astronaute ESA",
+    resultats: [["esa", "Thomas Pesquet est un astronaute de l’Agence spatiale européenne, sélectionné en 2009."],
+                ["cnes", "L’astronaute français Thomas Pesquet fait partie du corps des astronautes européens de l’ESA."]],
+    explication: "Les deux sources officielles le confirment : Thomas Pesquet est bien un astronaute français de l’ESA." },
+  { texte: "Il est né en 1978 à Paris.", invente: true,
+    requete: "Thomas Pesquet lieu de naissance",
+    resultats: [["esa", "Thomas Pesquet est né le 27 février 1978 à Rouen, en Normandie."],
+                ["encyclo", "Né à Rouen en 1978, Thomas Pesquet a fait ses études d’ingénieur avant de devenir astronaute."]],
+    explication: "L’année est juste, mais la ville est fausse : Thomas Pesquet est né à Rouen. L’IA a mélangé un vrai fait (1978) et un faux (Paris). C’est typique d’une hallucination !" },
+  { texte: "Avant de devenir astronaute, il était ingénieur et pilote de ligne.", invente: false,
+    requete: "Thomas Pesquet métier avant astronaute",
+    resultats: [["encyclo", "Ingénieur de formation, Thomas Pesquet a ensuite été pilote de ligne avant d’être sélectionné comme astronaute."],
+                ["esa", "Avant de rejoindre l’ESA, Thomas Pesquet a travaillé comme ingénieur, puis comme pilote de ligne."]],
+    explication: "Les deux sources disent la même chose : l’information est exacte." },
+  { texte: "Il est le premier Français à être allé dans l’espace.", invente: true,
+    requete: "premier Français dans l’espace",
+    resultats: [["cnes", "Jean-Loup Chrétien est devenu le premier Français à aller dans l’espace, en 1982."],
+                ["encyclo", "Thomas Pesquet est le dixième astronaute français à être allé dans l’espace."]],
+    explication: "Faux : le premier Français dans l’espace est Jean-Loup Chrétien, en 1982. Thomas Pesquet est le dixième. L’IA a « exagéré » parce que Thomas Pesquet est très connu." },
+  { texte: "Il a effectué deux missions à bord de la Station spatiale internationale (ISS) : Proxima en 2016-2017 et Alpha en 2021.", invente: false,
+    requete: "Thomas Pesquet missions ISS",
+    resultats: [["esa", "Sa première mission, Proxima, a débuté en novembre 2016 et a duré environ six mois. Sa deuxième mission, Alpha, a débuté en avril 2021."],
+                ["cnes", "Pendant la mission Alpha, en 2021, Thomas Pesquet a mené plus de 200 expériences scientifiques à bord de l’ISS."]],
+    explication: "Les sources confirment les deux missions et leurs dates : l’information est exacte." },
+  { texte: "En 2021, il est devenu le premier Français commandant de l’ISS.", invente: false,
+    requete: "Thomas Pesquet commandant ISS",
+    resultats: [["esa", "Le 4 octobre 2021, Thomas Pesquet est devenu commandant de la Station spatiale internationale : une première pour la France."],
+                ["cnes", "Thomas Pesquet a été le premier Français à commander la Station spatiale internationale, en 2021."]],
+    explication: "Exact ! Cette phrase semble incroyable, mais les deux sources la confirment. Une information surprenante n’est pas forcément fausse : on vérifie toujours." },
+  { texte: "Pendant la mission Alpha, il a marché sur Mars.", invente: true,
+    requete: "Thomas Pesquet Mars",
+    resultats: [["cnes", "Pendant la mission Alpha, Thomas Pesquet a vécu à bord de l’ISS, en orbite autour de la Terre, à environ 400 km d’altitude."],
+                ["encyclo", "Aucun être humain n’a encore posé le pied sur Mars. Pour l’instant, seuls des robots y ont été envoyés."]],
+    explication: "Faux : aucun humain n’est encore allé sur Mars. Thomas Pesquet est resté en orbite autour de la Terre, dans l’ISS. L’IA a inventé ce fait en associant « astronaute » et « Mars »." }
+];
+
+/* ---------- Données : étape 2 (fiche en autonomie) ---------- */
+const FICHE2 = [
+  { id: "f1", texte: "Fortnite est un jeu vidéo sorti en 2017.", invente: false },
+  { id: "f2", texte: "Il a été créé par le studio japonais Nintendo, célèbre pour Mario.", invente: true },
+  { id: "f3", texte: "Son mode le plus connu, Battle Royale, oppose jusqu’à 100 joueurs sur une île.", invente: false },
+  { id: "f4", texte: "Pour jouer au mode Battle Royale, il faut acheter le jeu 70 euros.", invente: true },
+  { id: "f5", texte: "Dans le jeu, on peut acheter des tenues avec une monnaie virtuelle : les V-bucks.", invente: false },
+  { id: "f6", texte: "Fortnite est classé PEGI 3 : il convient à tous les âges.", invente: true },
+  { id: "f7", texte: "Le jeu est disponible uniquement sur PlayStation.", invente: true },
+  { id: "f8", texte: "Selon une étude, 3 milliards de personnes y jouent chaque jour.", invente: true }
+];
+
+// Index du moteur de recherche simulé. "fiable: false" = source douteuse.
+const INDEX = [
+  { id: "officiel", source: "Site officiel de Fortnite (fortnite.com)", type: "Site officiel du jeu", fiable: true,
+    extrait: "Fortnite est un jeu gratuit développé et publié par Epic Games. On peut y jouer sur ordinateur, sur les consoles PlayStation, Xbox et Nintendo Switch, ainsi que sur certains mobiles.",
+    mots: ["fortnite", "epic", "games", "studio", "createur", "cree", "creation", "developpe", "developpeur", "editeur", "gratuit", "prix", "payant", "payer", "acheter", "euros", "cout", "coute", "plateforme", "playstation", "ps5", "ps4", "xbox", "switch", "nintendo", "console", "ordinateur", "mobile", "telephone", "disponible", "jouer"] },
+  { id: "encyclo", source: "Encyclopédie en ligne – article « Fortnite »", type: "Encyclopédie", fiable: true,
+    extrait: "Fortnite est un jeu vidéo développé par le studio américain Epic Games, sorti en 2017. Son mode Battle Royale, gratuit, réunit jusqu’à 100 joueurs sur une île. Le jeu est financé par la vente d’objets virtuels (tenues, danses) achetés avec des V-bucks.",
+    mots: ["fortnite", "epic", "games", "studio", "americain", "createur", "cree", "developpe", "sortie", "sorti", "date", "annee", "2017", "battle", "royale", "joueurs", "100", "ile", "mode", "gratuit", "vbucks", "bucks", "monnaie", "tenues", "skins", "acheter", "objets", "histoire"] },
+  { id: "pegi", source: "Site officiel PEGI (pegi.info)", type: "Organisme officiel de classement des jeux", fiable: true,
+    extrait: "Fortnite est classé PEGI 12 : il est déconseillé aux moins de 12 ans, notamment en raison de scènes de combat.",
+    mots: ["pegi", "age", "ages", "ans", "classement", "classe", "enfants", "tous", "violence", "combat", "fortnite", "interdit", "conseille", "deconseille"] },
+  { id: "nintendo", source: "Site officiel de Nintendo", type: "Site officiel d’une entreprise", fiable: true,
+    extrait: "Nintendo est une entreprise japonaise connue pour ses séries Mario et Zelda. Sur Nintendo Switch, on trouve aussi des jeux créés par d’autres studios, comme Fortnite d’Epic Games.",
+    mots: ["nintendo", "japonais", "japon", "mario", "zelda", "switch", "studio", "createur", "cree"] },
+  { id: "presse", source: "Journal en ligne spécialisé dans les jeux vidéo", type: "Média reconnu", fiable: true,
+    extrait: "Epic Games annonce des centaines de millions de joueurs inscrits sur Fortnite depuis sa sortie. Aucune source fiable ne parle de 3 milliards de joueurs par jour : ce serait plus d’un tiers de la population mondiale !",
+    mots: ["joueurs", "nombre", "combien", "milliards", "millions", "jour", "quotidien", "etude", "statistique", "chiffre", "record", "fortnite", "population", "monde"] },
+  { id: "blog", source: "Blog « astuces-gaming-gratuit » (auteur inconnu)", type: "Blog anonyme – source douteuse", fiable: false,
+    extrait: "Fortnite c’est PEGI 3 donc tout le monde peut jouer !!! Pour le Battle Royale il faut payer 70 € mais franchement ça vaut le coup.",
+    mots: ["pegi", "age", "ans", "tous", "payant", "payer", "prix", "euros", "70", "acheter", "cout", "coute", "battle", "royale", "fortnite", "gratuit"] },
+  { id: "video", source: "Vidéo d’un compte anonyme (12 vues)", type: "Réseau social – source douteuse", fiable: false,
+    extrait: "« 3 milliards de joueurs chaque jour sur Fortnite, c’est le record du monde, une étude l’a prouvé ! » (aucune étude citée)",
+    mots: ["joueurs", "milliards", "jour", "etude", "record", "nombre", "combien", "chiffre", "fortnite", "statistique"] }
+];
+
+/* ---------- Données : étape 3 (réparer) ---------- */
+const REPARATIONS = [
+  { id: "f2", faux: "Il a été créé par le studio japonais Nintendo, célèbre pour Mario.",
+    phrases: ["Il a été créé par un youtubeur français.", "Il a été créé par le studio américain Epic Games.", "Il a été créé par le studio japonais Sony."], bonnePhrase: 1,
+    sources: ["Site officiel de Fortnite", "Vidéo d’un compte anonyme", "Blog anonyme"], bonneSource: 0,
+    explication: "Le site officiel du jeu et l’encyclopédie indiquent qu’Epic Games, un studio américain, a créé Fortnite. Nintendo le propose seulement sur sa console Switch." },
+  { id: "f4", faux: "Pour jouer au mode Battle Royale, il faut acheter le jeu 70 euros.",
+    phrases: ["Le mode Battle Royale est gratuit ; seuls certains objets sont payants.", "Le jeu coûte 7 euros.", "Le jeu est gratuit seulement le week-end."], bonnePhrase: 0,
+    sources: ["Blog anonyme", "Site officiel de Fortnite", "Vidéo d’un compte anonyme"], bonneSource: 1,
+    explication: "Le site officiel indique que le jeu est gratuit. Le blog anonyme disait l’inverse : une seule source douteuse ne suffit pas, il faut croiser !" },
+  { id: "f6", faux: "Fortnite est classé PEGI 3 : il convient à tous les âges.",
+    phrases: ["Fortnite n’a pas de classement PEGI.", "Fortnite est classé PEGI 18.", "Fortnite est classé PEGI 12 : il est déconseillé aux moins de 12 ans."], bonnePhrase: 2,
+    sources: ["Site officiel PEGI", "Blog anonyme", "Vidéo d’un compte anonyme"], bonneSource: 0,
+    explication: "Pour connaître l’âge conseillé d’un jeu, la meilleure source est l’organisme qui le classe : PEGI. Fortnite est classé PEGI 12." },
+  { id: "f7", faux: "Le jeu est disponible uniquement sur PlayStation.",
+    phrases: ["Le jeu est disponible uniquement sur ordinateur.", "Le jeu est disponible sur ordinateur, sur plusieurs consoles et sur certains mobiles.", "Le jeu est disponible uniquement sur Nintendo Switch."], bonnePhrase: 1,
+    sources: ["Vidéo d’un compte anonyme", "Blog anonyme", "Site officiel de Fortnite"], bonneSource: 2,
+    explication: "Le site officiel liste les plateformes : ordinateur, PlayStation, Xbox, Nintendo Switch et certains mobiles. Le mot « uniquement » était faux." },
+  { id: "f8", faux: "Selon une étude, 3 milliards de personnes y jouent chaque jour.",
+    phrases: ["30 milliards de personnes y jouent chaque jour.", "Le jeu compte des centaines de millions de joueurs inscrits depuis sa sortie.", "Toute la population mondiale y a déjà joué."], bonnePhrase: 1,
+    sources: ["Journal en ligne spécialisé", "Vidéo d’un compte anonyme", "Blog anonyme"], bonneSource: 0,
+    explication: "« Une étude » sans nom ni lien, c’est un signal d’alerte ! Le journal spécialisé rappelle qu’Epic Games parle de centaines de millions de joueurs inscrits, pas de 3 milliards par jour." }
+];
+
+/* ---------- Outils ---------- */
+const $ = (id) => document.getElementById(id);
+function annoncer(texte) { $("annonce").textContent = ""; setTimeout(() => { $("annonce").textContent = texte; }, 50); }
+function normaliser(t) {
+  return t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[-’']/g, " ");
+}
+function el(tag, attrs = {}, ...enfants) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v; else if (k === "text") e.textContent = v; else e.setAttribute(k, v);
+  }
+  enfants.forEach((c) => e.append(c));
+  return e;
+}
+function allerA(etape) {
+  ["etape-1", "etape-2", "etape-3", "fin"].forEach((s) => { $(s).hidden = s !== etape; });
+  [1, 2, 3].forEach((n) => {
+    const li = $("nav-" + n);
+    const actuel = etape === "etape-" + n;
+    if (actuel) li.setAttribute("aria-current", "step"); else li.removeAttribute("aria-current");
+    const num = etape === "fin" ? 4 : Number(etape.split("-")[1]);
+    li.classList.toggle("faite", n < num);
+  });
+  window.scrollTo(0, 0);
+  const titre = document.querySelector("#" + etape + " h2");
+  if (titre) titre.focus();
+}
+
+/* ---------- Étape 1 ---------- */
+const etat1 = FICHE1.map(() => null); // null | "exacte" | "inventee"
+let selection1 = null;
+
+function dessinerFiche1() {
+  const ul = $("fiche-1");
+  ul.innerHTML = "";
+  FICHE1.forEach((p, i) => {
+    const b = el("button", { class: "phrase", type: "button", "aria-pressed": String(selection1 === i) });
+    b.append(p.texte);
+    if (etat1[i]) {
+      b.classList.add(etat1[i]);
+      b.append(el("span", { class: "etiquette", text: etat1[i] === "exacte" ? "vérifiée : exacte" : "vérifiée : inventée" }));
+    }
+    b.addEventListener("click", () => { selection1 = i; dessinerFiche1(); afficherVerification(i); });
+    ul.append(el("li", {}, b));
+  });
+  const trouvees = FICHE1.filter((p, i) => p.invente && etat1[i] === "inventee").length;
+  $("compteur-1").textContent = "Informations inventées trouvées : " + trouvees + " sur 3";
+  $("suivant-1").disabled = trouvees < 3;
+}
+
+function afficherVerification(i) {
+  const p = FICHE1[i];
+  const panneau = $("panneau-1");
+  panneau.innerHTML = "";
+
+  const b1 = el("div", { class: "bloc" }, el("h3", { text: "1. Je repère" }), el("p", { text: "« " + p.texte + " »" }));
+
+  const liste = el("ul", { class: "resultats" });
+  p.resultats.forEach(([cle, extrait]) => {
+    liste.append(el("li", { class: "resultat" },
+      el("p", { class: "source", text: SOURCES[cle].source }),
+      el("p", { class: "type", text: SOURCES[cle].type }),
+      el("p", { class: "extrait", text: extrait })));
+  });
+  const b2 = el("div", { class: "bloc" }, el("h3", { text: "2. Je cherche" }),
+    el("p", {}, "Recherche : ", el("span", { class: "requete", text: p.requete })), liste);
+
+  const fb = el("div", { class: "feedback" });
+  const oui = el("button", { class: "btn", type: "button", text: "Elles confirment : l’information est exacte" });
+  const non = el("button", { class: "btn", type: "button", text: "Elles contredisent : l’information est inventée" });
+  const b3 = el("div", { class: "bloc" }, el("h3", { text: "3. Je croise" }),
+    el("p", { text: "Les deux sources disent-elles la même chose que la fiche ?" }), el("div", { class: "actions" }, oui, non), fb);
+
+  function repondre(ditInventee) {
+    const juste = ditInventee === p.invente;
+    fb.className = "feedback " + (juste ? "bon" : "faux");
+    fb.innerHTML = "";
+    if (juste) {
+      etat1[i] = p.invente ? "inventee" : "exacte";
+      fb.append(el("p", {}, el("strong", { text: "Bonne réponse. " }), p.explication));
+      dessinerFiche1();
+      const restantes = 3 - FICHE1.filter((q, k) => q.invente && etat1[k] === "inventee").length;
+      fb.append(el("p", { text: restantes > 0 ? "Choisis une autre phrase dans la fiche." : "Bravo, tu as trouvé les 3 informations inventées ! Tu peux passer à l’étape 2." }));
+    } else {
+      fb.append(el("p", {}, el("strong", { text: "Pas encore. " }),
+        p.invente ? "Relis bien les deux sources : est-ce qu’elles disent exactement la même chose que la fiche ? Compare les détails (lieux, dates, noms)."
+                  : "Relis les deux sources : elles disent la même chose que la fiche. Une information surprenante peut être exacte !"));
+    }
+    annoncer(fb.textContent);
+  }
+  oui.addEventListener("click", () => repondre(false));
+  non.addEventListener("click", () => repondre(true));
+
+  panneau.append(b1, b2, b3);
+}
+$("suivant-1").addEventListener("click", () => allerA("etape-2"));
+
+/* ---------- Étape 2 ---------- */
+const signalees = new Set();
+let essais2 = 0;
+
+function dessinerFiche2() {
+  const ul = $("fiche-2");
+  ul.innerHTML = "";
+  FICHE2.forEach((p) => {
+    const actif = signalees.has(p.id);
+    const b = el("button", { class: "phrase" + (actif ? " inventee" : ""), type: "button", "aria-pressed": String(actif) });
+    b.append(p.texte);
+    if (actif) b.append(el("span", { class: "etiquette", text: "signalée comme inventée" }));
+    b.addEventListener("click", () => {
+      actif ? signalees.delete(p.id) : signalees.add(p.id);
+      dessinerFiche2();
+      ul.querySelectorAll(".phrase")[FICHE2.indexOf(p)].focus();
+    });
+    ul.append(el("li", {}, b));
+  });
+  $("compteur-2").textContent = "Phrases signalées : " + signalees.size + " sur 5 attendues";
+}
+
+function rechercher(requete) {
+  const zone = $("zone-resultats");
+  zone.innerHTML = "";
+  const mots = normaliser(requete).split(/[^a-z0-9]+/).filter((m) => m.length >= 2 && !["le", "la", "les", "de", "des", "du", "un", "une", "et", "en", "est", "il", "qui", "quel", "quelle"].includes(m));
+  if (mots.length === 0) {
+    zone.append(el("p", { text: "Écris au moins un mot-clé pour lancer la recherche." }));
+    return;
+  }
+  const trouves = INDEX.map((doc) => ({
+    doc,
+    score: mots.filter((m) => doc.mots.some((k) => k === m || (m.length >= 4 && (k.startsWith(m) || m.startsWith(k) && k.length >= 4)))).length
+  })).filter((r) => r.score > 0).sort((a, b) => b.score - a.score);
+
+  if (trouves.length === 0) {
+    zone.append(el("p", { text: "Aucun résultat. Essaie d’autres mots-clés : un nom, une date, un prix, un âge…" }));
+    annoncer("Aucun résultat.");
+    return;
+  }
+  zone.append(el("p", { text: trouves.length + " résultat" + (trouves.length > 1 ? "s" : "") + " pour « " + requete + " » :" }));
+  const ul = el("ul", { class: "resultats" });
+  trouves.forEach(({ doc }) => {
+    ul.append(el("li", { class: "resultat" },
+      el("p", { class: "source", text: doc.source }),
+      el("p", { class: "type" + (doc.fiable ? "" : " douteux"), text: doc.type }),
+      el("p", { class: "extrait", text: doc.extrait })));
+  });
+  zone.append(ul);
+  annoncer(trouves.length + " résultats trouvés.");
+}
+$("form-recherche").addEventListener("submit", (e) => { e.preventDefault(); rechercher($("champ-recherche").value); });
+
+$("valider-2").addEventListener("click", () => {
+  essais2++;
+  const fb = $("feedback-2");
+  fb.innerHTML = "";
+  const oubliees = FICHE2.filter((p) => p.invente && !signalees.has(p.id));
+  const enTrop = FICHE2.filter((p) => !p.invente && signalees.has(p.id));
+
+  if (oubliees.length === 0 && enTrop.length === 0) {
+    fb.className = "feedback bon";
+    fb.append(el("p", {}, el("strong", { text: "Bravo ! " }), "Tu as repéré les 5 informations inventées sans te tromper."),
+      el("p", { text: "Tu as remarqué ? L’IA a mélangé des faits exacts (la date de sortie, les V-bucks) et des faits inventés (le prix, l’âge, le studio). C’est ce qui rend les hallucinations difficiles à repérer." }));
+    $("suivant-2").disabled = false;
+  } else {
+    fb.className = "feedback faux";
+    if (oubliees.length > 0) fb.append(el("p", {}, el("strong", { text: "Pas encore. " }),
+      "Il reste " + oubliees.length + " information" + (oubliees.length > 1 ? "s" : "") + " inventée" + (oubliees.length > 1 ? "s" : "") + " non signalée" + (oubliees.length > 1 ? "s" : "") + ". Relis la fiche : vérifie en priorité les phrases qui contiennent un nom, un chiffre, un prix ou un âge."));
+    enTrop.forEach((p) => fb.append(el("p", { text: "La phrase « " + p.texte + " » est exacte. Fais une recherche pour t’en assurer, puis retire ton signalement." })));
+    if (essais2 >= 2 && oubliees.length > 0) {
+      fb.append(el("p", { text: "Coup de pouce : essaie de chercher « Fortnite " + ["créateur", "prix", "âge", "console", "joueurs"][Math.min(essais2 - 2, 4)] + " »." }));
+    }
+    fb.append(el("p", { text: "Attention aussi aux sources douteuses (blog anonyme, vidéo d’un compte inconnu) : elles peuvent répéter une information fausse." }));
+  }
+  annoncer(fb.textContent);
+});
+let etape3Prete = false;
+$("suivant-2").addEventListener("click", () => {
+  if (!etape3Prete) { dessinerEtape3(); etape3Prete = true; }
+  allerA("etape-3");
+});
+
+/* ---------- Étape 3 ---------- */
+function dessinerEtape3() {
+  const zone = $("items-3");
+  zone.innerHTML = "";
+  REPARATIONS.forEach((r, n) => {
+    const item = el("div", { class: "item", id: "item-" + r.id });
+    item.append(el("h3", { text: "Réparation " + (n + 1) + " sur 5" }),
+      el("p", { class: "citation" }, "Phrase inventée : « " + r.faux + " »"));
+
+    const fs1 = el("fieldset", { class: "choix" }, el("legend", { text: "Quelle est la phrase correcte ?" }));
+    r.phrases.forEach((t, k) => {
+      const id = r.id + "-p" + k;
+      fs1.append(el("label", { for: id }, el("input", { type: "radio", name: r.id + "-phrase", id, value: String(k) }), t));
+    });
+    const fs2 = el("fieldset", { class: "choix" }, el("legend", { text: "Quelle source le prouve le mieux ?" }));
+    r.sources.forEach((t, k) => {
+      const id = r.id + "-s" + k;
+      fs2.append(el("label", { for: id }, el("input", { type: "radio", name: r.id + "-source", id, value: String(k) }), t));
+    });
+    item.append(fs1, fs2, el("div", { class: "feedback", id: "fb-" + r.id }));
+    zone.append(item);
+  });
+}
+
+$("form-reparer").addEventListener("submit", (e) => {
+  e.preventDefault();
+  let justes = 0, incompletes = 0;
+  REPARATIONS.forEach((r) => {
+    const p = document.querySelector('input[name="' + r.id + '-phrase"]:checked');
+    const s = document.querySelector('input[name="' + r.id + '-source"]:checked');
+    const fb = $("fb-" + r.id);
+    fb.innerHTML = "";
+    if (!p || !s) {
+      incompletes++;
+      fb.className = "feedback info";
+      fb.append(el("p", { text: "Choisis une phrase et une source pour cette réparation." }));
+      return;
+    }
+    const bonneP = Number(p.value) === r.bonnePhrase, bonneS = Number(s.value) === r.bonneSource;
+    if (bonneP && bonneS) {
+      justes++;
+      fb.className = "feedback bon";
+      fb.append(el("p", {}, el("strong", { text: "Bonne réparation. " }), r.explication));
+    } else {
+      fb.className = "feedback faux";
+      const pistes = [];
+      if (!bonneP) pistes.push("la phrase n’est pas la bonne : relis ce que disent les sources fiables");
+      if (!bonneS) pistes.push("la source choisie n’est pas fiable : préfère un site officiel, un organisme ou un média reconnu");
+      fb.append(el("p", {}, el("strong", { text: "Pas encore : " }), pistes.join(" ; ") + ". Modifie ta réponse et vérifie à nouveau."));
+    }
+  });
+
+  const fbG = $("feedback-3");
+  fbG.innerHTML = "";
+  if (incompletes > 0) {
+    fbG.className = "feedback info";
+    fbG.append(el("p", { text: "Il reste " + incompletes + " réparation" + (incompletes > 1 ? "s" : "") + " à compléter." }));
+  } else if (justes >= 4) {
+    fbG.className = "feedback bon";
+    fbG.append(el("p", {}, el("strong", { text: justes + " réparations justes sur 5 : mission réussie ! " }), "Tu peux voir la fiche réparée."),
+      el("p", {}, (() => { const b = el("button", { class: "btn", type: "button", text: "Voir la fiche réparée" }); b.addEventListener("click", afficherFin); return b; })()));
+  } else {
+    fbG.className = "feedback faux";
+    fbG.append(el("p", {}, el("strong", { text: justes + " réparation" + (justes > 1 ? "s justes" : " juste") + " sur 5. " }),
+      "Il en faut au moins 4. Lis les explications sous chaque réparation, refais une recherche si besoin, puis vérifie à nouveau. Tu peux réessayer autant de fois que tu veux."));
+  }
+  annoncer(fbG.textContent);
+});
+
+$("retour-recherche").addEventListener("click", () => {
+  allerA("etape-2");
+  $("suivant-2").textContent = "Revenir à l’étape 3";
+});
+
+function afficherFin() {
+  const ul = $("fiche-corrigee");
+  ul.innerHTML = "";
+  FICHE2.forEach((p) => {
+    const r = REPARATIONS.find((x) => x.id === p.id);
+    ul.append(r ? el("li", {}, el("span", { class: "corrige", text: r.phrases[r.bonnePhrase] }), " (corrigé)") : el("li", { text: p.texte }));
+  });
+  allerA("fin");
+  annoncer("Mission réussie !");
+}
+
+/* ---------- Démarrage ---------- */
+dessinerFiche1();
+dessinerFiche2();
+</script>
+</body>
+</html>
