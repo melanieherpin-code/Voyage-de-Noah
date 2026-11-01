@@ -1,0 +1,126 @@
+/* Le Voyage de Noah – Chapitre 3 : Le labyrinthe des illusions
+   Style commun à tous les mini-jeux du chapitre. */
+@import url("https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;600;800&display=swap");
+
+:root {
+  --nuit: #12143B;
+  --nuit-profond: #0A0B24;
+  --cyan: #8ECAE6;
+  --neon: #5BE3A6;
+  --violet: #A98BFF;
+  --ambre: #FFC857;
+  --rose: #FF8A8A;
+  --texte: #F2F5FF;
+  --texte-doux: #C5CEE8;
+  --verre: rgba(255, 255, 255, 0.06);
+  --bord: rgba(142, 202, 230, 0.35);
+  --focus: #FFC857;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Libre Franklin", "Franklin Gothic Book", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--texte);
+  background-color: var(--nuit-profond);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' fill='none' stroke='%238ECAE6' stroke-opacity='0.07' stroke-width='2'%3E%3Cpath d='M0 20h40v40h40V20h40M20 0v80h40v40M80 60v40h40M0 100h20'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse at 50% -10%, #23286E 0%, var(--nuit) 45%, var(--nuit-profond) 100%);
+  background-attachment: fixed;
+}
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 6px; }
+/* Titres et zones de feedback reçoivent le focus par le script (pour le lecteur d’écran) : pas de cadre */
+[tabindex="-1"]:focus { outline: none; }
+a { color: var(--cyan); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+[hidden] { display: none !important; }
+
+/* ---------- En-tête et couloir de progression ---------- */
+.entete { padding: 16px 24px 0; max-width: 1100px; margin: 0 auto; }
+.fil { margin: 0; font-size: 14px; color: var(--texte-doux); letter-spacing: .04em; text-transform: uppercase; }
+.couloir { margin: 12px 0 0; }
+.couloir ol { list-style: none; display: flex; gap: 6px; margin: 0; padding: 0; }
+.couloir li {
+  flex: 1; text-align: center; font-size: 13px; padding: 8px 4px; border-radius: 8px 8px 2px 2px;
+  border: 1px solid var(--bord); color: var(--texte-doux); background: rgba(255,255,255,.03);
+}
+.couloir li .num { display: block; font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+.couloir li.ouverte { border-color: var(--neon); color: var(--texte); background: rgba(91,227,166,.12); }
+.couloir li[aria-current="step"] { border: 2px solid var(--cyan); color: var(--texte); background: rgba(142,202,230,.15); box-shadow: 0 0 14px rgba(142,202,230,.45); }
+@media (max-width: 640px) { .couloir li .nom { display: none; } }
+
+main { max-width: 1100px; margin: 0 auto; padding: 20px 24px 48px; }
+h1 { font-size: 34px; font-weight: 800; line-height: 1.15; margin: 0 0 6px; }
+h2 { font-size: 24px; font-weight: 800; margin: 0 0 10px; }
+h3 { font-size: 18px; font-weight: 800; margin: 0 0 6px; }
+.objectif { font-size: 17px; margin: 0 0 4px; }
+.duree { font-size: 15px; color: var(--texte-doux); margin: 0; }
+
+/* ---------- Bannière d'accueil ---------- */
+.banniere {
+  position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--bord);
+  min-height: 300px; display: flex; align-items: flex-end; margin-bottom: 20px;
+}
+.banniere img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 45%; }
+.banniere::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,11,36,0) 35%, rgba(10,11,36,.92) 88%); }
+.banniere .texte { position: relative; z-index: 1; padding: 20px 24px; }
+.credit { position: absolute; z-index: 1; top: 8px; right: 12px; font-size: 12px; color: var(--texte-doux); background: rgba(10,11,36,.7); padding: 2px 8px; border-radius: 4px; }
+
+/* ---------- Blocs ---------- */
+.verre { background: var(--verre); border: 1px solid var(--bord); border-radius: 14px; padding: 18px 20px; backdrop-filter: blur(4px); }
+.noah { display: flex; gap: 14px; align-items: flex-start; margin: 0 0 16px; }
+.noah .avatar {
+  flex: 0 0 64px; width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--cyan);
+  background: url("noah-visage.jpg") center / cover no-repeat; box-shadow: 0 0 12px rgba(142,202,230,.5);
+}
+.noah .bulle { background: rgba(142,202,230,.12); border: 1px solid var(--bord); border-radius: 4px 14px 14px 14px; padding: 10px 14px; font-style: italic; }
+.noah .bulle strong { font-style: normal; color: var(--cyan); }
+.consigne { border: 2px solid var(--cyan); border-radius: 12px; padding: 12px 16px; margin: 0 0 16px; background: rgba(18,20,59,.75); }
+.consigne h2, .consigne h3 { color: var(--cyan); font-size: 18px; margin-bottom: 4px; }
+.consigne p { margin: 0; }
+.memo { border-left: 4px solid var(--violet); padding: 8px 14px; background: rgba(169,139,255,.1); border-radius: 0 10px 10px 0; margin: 0 0 16px; }
+.memo ol, .memo ul { margin: 4px 0 0; padding-left: 22px; }
+
+/* ---------- Boutons ---------- */
+.btn {
+  font: inherit; font-weight: 800; border: 0; border-radius: 10px; padding: 12px 20px; cursor: pointer;
+  background: var(--cyan); color: var(--nuit); box-shadow: 0 0 0 rgba(142,202,230,0); transition: box-shadow .2s, transform .1s;
+}
+.btn:hover { box-shadow: 0 0 16px rgba(142,202,230,.6); }
+.btn:active { transform: translateY(1px); }
+.btn[disabled] { background: #5A6382; color: #E3E7F2; cursor: not-allowed; box-shadow: none; }
+.btn.secondaire { background: transparent; color: var(--cyan); border: 2px solid var(--cyan); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.centre { justify-content: center; }
+
+/* ---------- Feedback ---------- */
+.feedback { border-radius: 12px; padding: 12px 16px; margin-top: 14px; border: 2px solid; }
+.feedback:empty { display: none; }
+.feedback p { margin: 0 0 4px; }
+.feedback p:last-child { margin-bottom: 0; }
+.feedback.bon { border-color: var(--neon); background: rgba(91,227,166,.12); }
+.feedback.faux { border-color: var(--rose); background: rgba(255,138,138,.12); }
+.feedback.info { border-color: var(--cyan); background: rgba(142,202,230,.12); }
+.feedback .verdict { font-weight: 800; }
+.feedback.bon .verdict { color: var(--neon); }
+.feedback.faux .verdict { color: var(--rose); }
+
+/* ---------- Écran de fin de jeu ---------- */
+.fin { text-align: center; }
+.etoiles { font-size: 44px; letter-spacing: 8px; margin: 6px 0; }
+.etoiles .pleine { color: var(--ambre); text-shadow: 0 0 12px rgba(255,200,87,.7); }
+.etoiles .vide { color: #4A5275; }
+.score-grand { font-size: 22px; font-weight: 800; margin: 0 0 8px; }
+.fin .verre { text-align: left; max-width: 720px; margin: 16px auto 0; }
+
+/* ---------- Animations (désactivées si l'élève les a réduites) ---------- */
+@keyframes apparition { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes porte { 0% { box-shadow: 0 0 0 rgba(91,227,166,0); } 50% { box-shadow: 0 0 24px rgba(91,227,166,.9); } 100% { box-shadow: 0 0 0 rgba(91,227,166,0); } }
+.apparait { animation: apparition .35s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

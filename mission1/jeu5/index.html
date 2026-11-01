@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeu 5 – L’enquête Fortnite · Mission 1 · Le Voyage de Noah</title>
+<link rel="stylesheet" href="../../commun/labyrinthe.css">
+<style>
+  .infos-partie { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--texte-doux); font-weight: 600; margin-bottom: 14px; }
+  .infos-partie strong { color: var(--texte); }
+  .phases { list-style: none; display: flex; gap: 8px; margin: 0 0 14px; padding: 0; flex-wrap: wrap; }
+  .phases li { border: 1px solid var(--bord); border-radius: 999px; padding: 4px 12px; font-size: 14px; color: var(--texte-doux); }
+  .phases li[aria-current="step"] { border: 2px solid var(--cyan); color: var(--texte); font-weight: 800; }
+  .phases li.faite { border-color: var(--neon); color: var(--neon); }
+  .jeu { display: grid; grid-template-columns: 1.15fr 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 900px) { .jeu { grid-template-columns: 1fr; } }
+
+  /* Fiche écrite par l’IA */
+  .fiche { background: linear-gradient(160deg, rgba(35,40,110,.95), rgba(18,20,59,.95)); border: 2px solid var(--violet); border-radius: 16px; padding: 18px 20px; }
+  .fiche .origine { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--violet); font-weight: 800; }
+  .fiche h3 { font-size: 21px; margin: 2px 0 12px; }
+  .phrases { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .phrase {
+    width: 100%; text-align: left; font: inherit; color: var(--texte); cursor: pointer;
+    background: rgba(255,255,255,.05); border: 2px solid var(--bord); border-radius: 10px; padding: 9px 12px;
+  }
+  .phrase:hover { border-color: var(--cyan); }
+  .phrase[aria-pressed="true"] { border-color: var(--rose); background: rgba(255,138,138,.12); }
+  .phrase[aria-pressed="true"] .txt { text-decoration: line-through; text-decoration-thickness: 1px; }
+  .etiquette { display: block; font-size: 13px; font-weight: 800; margin-top: 2px; color: var(--rose); }
+  .compteur { font-weight: 600; margin: 12px 0 0; }
+
+  /* Moteur de recherche */
+  .moteur h3 { color: var(--cyan); }
+  .recherche { display: flex; gap: 8px; flex-wrap: wrap; }
+  .recherche input {
+    flex: 1 1 180px; font: inherit; color: var(--texte); background: rgba(10,11,36,.7);
+    border: 2px solid var(--cyan); border-radius: 10px; padding: 9px 12px;
+  }
+  .recherche input::placeholder { color: var(--texte-doux); }
+  .aide { font-size: 14px; color: var(--texte-doux); margin: 6px 0 0; }
+  .resultats { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 8px; }
+  .resultat { border: 1px solid var(--bord); border-radius: 10px; padding: 10px 12px; background: rgba(10,11,36,.55); }
+  .resultat .source { font-weight: 800; margin: 0; }
+  .resultat .type { font-size: 13px; margin: 0 0 4px; color: var(--texte-doux); font-weight: 600; }
+  .resultat .extrait { margin: 0; }
+  .note { font-size: 13px; color: var(--texte-doux); margin: 10px 0 0; }
+
+  /* Réparations */
+  .reparation { border: 1px solid var(--bord); border-radius: 14px; padding: 14px 16px; margin: 0 0 14px; background: rgba(255,255,255,.04); }
+  .reparation h4 { margin: 0 0 6px; font-size: 16px; color: var(--cyan); }
+  .citation { margin: 0 0 10px; padding: 8px 12px; border-radius: 8px; background: rgba(255,138,138,.12); border-left: 4px solid var(--rose); }
+  fieldset { border: 0; margin: 0 0 10px; padding: 0; }
+  legend { font-weight: 800; margin-bottom: 6px; padding: 0; }
+  .choix label {
+    display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; margin: 0 0 6px; cursor: pointer;
+    border: 1px solid var(--bord); border-radius: 8px; background: rgba(10,11,36,.45);
+  }
+  .choix label:has(input:checked) { border-color: var(--cyan); background: rgba(142,202,230,.16); }
+  .choix input { margin-top: 4px; accent-color: var(--cyan); width: 18px; height: 18px; flex: 0 0 auto; }
+
+  .fiche-corrigee { margin: 6px 0 0; padding-left: 22px; }
+  .fiche-corrigee li { margin-bottom: 4px; }
+  .corrige { color: var(--neon); font-weight: 600; }
+  .badge-eval { display: inline-block; margin: 4px 0 0; padding: 6px 14px; border-radius: 999px; border: 2px solid var(--neon); color: var(--neon); font-weight: 800; }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <p class="fil">Le Voyage de Noah · Chapitre 3 · Mission 1 : La fiche piégée</p>
+  <nav class="couloir" id="couloir" aria-label="Progression dans la mission"></nav>
+</div>
+
+<main>
+  <p class="sr-only" id="annonce" aria-live="polite"></p>
+
+  <!-- ========== ACCUEIL ========== -->
+  <section id="accueil" aria-labelledby="titre-jeu">
+    <div class="banniere">
+      <img src="../../commun/labyrinthe.jpg" alt="">
+      <span class="credit">Image réalisée avec une intelligence artificielle</span>
+      <div class="texte">
+        <h1 id="titre-jeu" tabindex="-1">Jeu 5 : L’enquête Fortnite</h1>
+        <p class="objectif">Objectif : utiliser seul la méthode « Je vérifie » pour démasquer et réparer une fiche écrite par une IA.</p>
+        <p class="duree">Durée : 6 min</p>
+      </div>
+    </div>
+
+    <div class="noah">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle"><strong>Noah :</strong> « Dernière porte avant la sortie ! Une IA a écrit une fiche sur Fortnite… et elle est remplie d’illusions. Cette fois, c’est toi l’enquêteur : à toi de jouer ! »</p>
+    </div>
+
+    <div class="consigne">
+      <h2>Consigne</h2>
+      <p><strong>Partie 1 – Enquêter :</strong> la fiche contient <strong>5 informations inventées</strong>. Fais tes recherches avec le moteur du labyrinthe, puis signale les 5 phrases inventées.</p>
+      <p style="margin-top:6px"><strong>Partie 2 – Réparer :</strong> pour chaque phrase inventée, choisis la phrase correcte et la source la plus fiable. Il faut au moins <strong>4 réparations justes sur 5</strong> pour réussir la mission.</p>
+    </div>
+
+    <div class="memo">
+      <strong>Rappelle-toi</strong>
+      <ul>
+        <li>La méthode : je <strong>repère</strong>, je <strong>cherche</strong> dans une source fiable, je <strong>croise</strong> au moins deux sources.</li>
+        <li>Toutes les sources ne se valent pas : pose-toi les 3 questions du détective (Qui a écrit ? Comment le sait-il ? Est-ce confirmé ailleurs ?).</li>
+      </ul>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn" id="commencer">Commencer l’enquête</button>
+    </div>
+  </section>
+
+  <!-- ========== PARTIE ========== -->
+  <section id="partie" aria-labelledby="titre-partie" hidden>
+    <ol class="phases" aria-label="Parties du jeu">
+      <li id="phase-1" aria-current="step">Partie 1 : Enquêter</li>
+      <li id="phase-2">Partie 2 : Réparer</li>
+    </ol>
+    <div class="infos-partie">
+      <span id="consigne-courte">Signale les 5 phrases inventées.</span>
+      <span>Points : <strong id="points">0</strong> / 10</span>
+    </div>
+
+    <div class="jeu">
+      <div>
+        <!-- Partie 1 : la fiche à signaler -->
+        <div id="bloc-enquete">
+          <h2 id="titre-partie" tabindex="-1" class="sr-only">Partie 1 : Enquêter</h2>
+          <div class="fiche">
+            <p class="origine">Réponse générée par une IA</p>
+            <h3>Fiche : Fortnite</h3>
+            <ul class="phrases" id="fiche"></ul>
+            <p class="compteur" id="compteur"></p>
+            <div class="actions">
+              <button class="btn" id="valider">Valider mes signalements</button>
+            </div>
+            <div class="feedback" id="feedback-1" tabindex="-1"></div>
+          </div>
+        </div>
+
+        <!-- Partie 2 : réparer -->
+        <form id="bloc-reparer" hidden>
+          <h2 id="titre-reparer" tabindex="-1">Partie 2 : Réparer la fiche</h2>
+          <div id="reparations"></div>
+          <div class="actions">
+            <button class="btn" type="submit">Vérifier mes réparations</button>
+          </div>
+          <div class="feedback" id="feedback-2" tabindex="-1"></div>
+        </form>
+      </div>
+
+      <div class="verre moteur">
+        <h3><label for="champ">Moteur de recherche du labyrinthe</label></h3>
+        <form class="recherche" id="form-recherche" role="search">
+          <input type="search" id="champ" autocomplete="off" aria-describedby="aide-recherche" placeholder="Fortnite…">
+          <button class="btn" type="submit">Rechercher</button>
+        </form>
+        <p class="aide" id="aide-recherche">Tape quelques mots-clés, par exemple : « Fortnite créateur » ou « Fortnite âge ».</p>
+        <div id="zone-resultats" aria-live="polite"></div>
+        <p class="note">Résultats simulés pour le jeu : les extraits sont reformulés à partir de sources réelles.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FIN DU JEU ========== -->
+  <section id="fin" class="fin" aria-labelledby="titre-fin" hidden>
+    <h2 id="titre-fin" tabindex="-1">Fiche réparée : la porte s’ouvre !</h2>
+    <p class="etoiles" id="etoiles" aria-hidden="true"></p>
+    <p class="score-grand" id="score-final"></p>
+    <p class="badge-eval">Évaluation de la mission : réussie</p>
+    <p id="message-final"></p>
+
+    <div class="noah" style="max-width:720px;margin:16px auto 0;text-align:left">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle"><strong>Noah :</strong> « Grâce à toi, la fiche est réparée et plus personne ne se fera piéger. Je retiens la leçon : une réponse d’IA qui a l’air sûre d’elle n’est pas forcément vraie ! »</p>
+    </div>
+
+    <div class="verre">
+      <h3>La fiche réparée : Fortnite</h3>
+      <ul class="fiche-corrigee" id="fiche-corrigee"></ul>
+      <p style="margin:12px 0 0">Tu as remarqué ? L’IA avait mélangé des faits exacts (la date de sortie, les V-bucks) et des faits inventés (le studio, le prix, l’âge…). Et le blog anonyme répétait certaines de ces erreurs : <strong>une seule source douteuse ne suffit jamais</strong>.</p>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn secondaire" id="rejouer">Rejouer</button>
+      <a class="btn" href="../bilan/">Voir le bilan de la mission</a>
+    </div>
+  </section>
+</main>
+
+<script src="../../commun/progression.js"></script>
+<script>
+const MISSION = "mission1", CLE = "jeu5";
+
+const FICHE = [
+  { id: "f1", texte: "Fortnite est un jeu vidéo sorti en 2017.", invente: false },
+  { id: "f2", texte: "Il a été créé par le studio japonais Nintendo, célèbre pour Mario.", invente: true },
+  { id: "f3", texte: "Son mode le plus connu, Battle Royale, oppose jusqu’à 100 joueurs sur une île.", invente: false },
+  { id: "f4", texte: "Pour jouer au mode Battle Royale, il faut acheter le jeu 70 euros.", invente: true },
+  { id: "f5", texte: "Dans le jeu, on peut acheter des tenues avec une monnaie virtuelle : les V-bucks.", invente: false },
+  { id: "f6", texte: "Fortnite est classé PEGI 3 : il convient à tous les âges.", invente: true },
+  { id: "f7", texte: "Le jeu est disponible uniquement sur PlayStation.", invente: true },
+  { id: "f8", texte: "Selon une étude, 3 milliards de personnes y jouent chaque jour.", invente: true }
+];
+
+// Index du moteur de recherche simulé. "fiable: false" = source douteuse.
+const INDEX = [
+  { source: "Site officiel de Fortnite (fortnite.com)", type: "Site officiel du jeu", fiable: true,
+    extrait: "Fortnite est un jeu gratuit développé et publié par Epic Games. On peut y jouer sur ordinateur, sur les consoles PlayStation, Xbox et Nintendo Switch, ainsi que sur certains mobiles.",
+    mots: ["fortnite", "epic", "games", "studio", "createur", "cree", "creation", "developpe", "developpeur", "editeur", "gratuit", "prix", "payant", "payer", "acheter", "euros", "cout", "coute", "plateforme", "playstation", "ps5", "ps4", "xbox", "switch", "nintendo", "console", "ordinateur", "mobile", "telephone", "disponible", "jouer"] },
+  { source: "Encyclopédie en ligne – article « Fortnite »", type: "Encyclopédie, sources citées", fiable: true,
+    extrait: "Fortnite est un jeu vidéo développé par le studio américain Epic Games, sorti en 2017. Son mode Battle Royale, gratuit, réunit jusqu’à 100 joueurs sur une île. Le jeu est financé par la vente d’objets virtuels (tenues, danses) achetés avec des V-bucks.",
+    mots: ["fortnite", "epic", "games", "studio", "americain", "createur", "cree", "developpe", "sortie", "sorti", "date", "annee", "2017", "battle", "royale", "joueurs", "100", "ile", "mode", "gratuit", "vbucks", "bucks", "monnaie", "tenues", "skins", "acheter", "objets", "histoire"] },
+  { source: "Site officiel PEGI (pegi.info)", type: "Organisme officiel de classement des jeux", fiable: true,
+    extrait: "Fortnite est classé PEGI 12 : il est déconseillé aux moins de 12 ans, notamment en raison de scènes de combat.",
+    mots: ["pegi", "age", "ages", "ans", "classement", "classe", "enfants", "tous", "violence", "combat", "fortnite", "interdit", "conseille", "deconseille"] },
+  { source: "Site officiel de Nintendo", type: "Site officiel d’une entreprise", fiable: true,
+    extrait: "Nintendo est une entreprise japonaise connue pour ses séries Mario et Zelda. Sur Nintendo Switch, on trouve aussi des jeux créés par d’autres studios, comme Fortnite d’Epic Games.",
+    mots: ["nintendo", "japonais", "japon", "mario", "zelda", "switch", "studio", "createur", "cree"] },
+  { source: "Journal en ligne spécialisé dans les jeux vidéo", type: "Média reconnu", fiable: true,
+    extrait: "Epic Games annonce des centaines de millions de joueurs inscrits sur Fortnite depuis sa sortie. Aucune source fiable ne parle de 3 milliards de joueurs par jour : ce serait plus d’un tiers de la population mondiale !",
+    mots: ["joueurs", "nombre", "combien", "milliards", "millions", "jour", "quotidien", "etude", "statistique", "chiffre", "record", "fortnite", "population", "monde"] },
+  { source: "Blog « astuces-gaming-gratuit » (auteur inconnu)", type: "Blog anonyme", fiable: false,
+    extrait: "Fortnite c’est PEGI 3 donc tout le monde peut jouer !!! Pour le Battle Royale il faut payer 70 € mais franchement ça vaut le coup.",
+    mots: ["pegi", "age", "ans", "tous", "payant", "payer", "prix", "euros", "70", "acheter", "cout", "coute", "battle", "royale", "fortnite", "gratuit"] },
+  { source: "Vidéo d’un compte anonyme (12 vues)", type: "Réseau social", fiable: false,
+    extrait: "« 3 milliards de joueurs chaque jour sur Fortnite, c’est le record du monde, une étude l’a prouvé ! » (aucune étude citée)",
+    mots: ["joueurs", "milliards", "jour", "etude", "record", "nombre", "combien", "chiffre", "fortnite", "statistique"] }
+];
+
+const REPARATIONS = [
+  { id: "f2", faux: "Il a été créé par le studio japonais Nintendo, célèbre pour Mario.",
+    phrases: ["Il a été créé par un youtubeur français.", "Il a été créé par le studio américain Epic Games.", "Il a été créé par le studio japonais Sony."], bonnePhrase: 1,
+    sources: ["Site officiel de Fortnite", "Vidéo d’un compte anonyme", "Blog anonyme"], bonneSource: 0,
+    explication: "Le site officiel du jeu et l’encyclopédie indiquent qu’Epic Games, un studio américain, a créé Fortnite. Nintendo le propose seulement sur sa console Switch." },
+  { id: "f4", faux: "Pour jouer au mode Battle Royale, il faut acheter le jeu 70 euros.",
+    phrases: ["Le mode Battle Royale est gratuit ; seuls certains objets sont payants.", "Le jeu coûte 7 euros.", "Le jeu est gratuit seulement le week-end."], bonnePhrase: 0,
+    sources: ["Blog anonyme", "Site officiel de Fortnite", "Vidéo d’un compte anonyme"], bonneSource: 1,
+    explication: "Le site officiel indique que le jeu est gratuit. Le blog anonyme disait l’inverse : une seule source douteuse ne suffit pas, il faut croiser !" },
+  { id: "f6", faux: "Fortnite est classé PEGI 3 : il convient à tous les âges.",
+    phrases: ["Fortnite n’a pas de classement PEGI.", "Fortnite est classé PEGI 18.", "Fortnite est classé PEGI 12 : il est déconseillé aux moins de 12 ans."], bonnePhrase: 2,
+    sources: ["Site officiel PEGI", "Blog anonyme", "Vidéo d’un compte anonyme"], bonneSource: 0,
+    explication: "Pour connaître l’âge conseillé d’un jeu, la meilleure source est l’organisme qui le classe : PEGI. Fortnite est classé PEGI 12." },
+  { id: "f7", faux: "Le jeu est disponible uniquement sur PlayStation.",
+    phrases: ["Le jeu est disponible uniquement sur ordinateur.", "Le jeu est disponible sur ordinateur, sur plusieurs consoles et sur certains mobiles.", "Le jeu est disponible uniquement sur Nintendo Switch."], bonnePhrase: 1,
+    sources: ["Vidéo d’un compte anonyme", "Blog anonyme", "Site officiel de Fortnite"], bonneSource: 2,
+    explication: "Le site officiel liste les plateformes : ordinateur, PlayStation, Xbox, Nintendo Switch et certains mobiles. Le mot « uniquement » était faux." },
+  { id: "f8", faux: "Selon une étude, 3 milliards de personnes y jouent chaque jour.",
+    phrases: ["30 milliards de personnes y jouent chaque jour.", "Le jeu compte des centaines de millions de joueurs inscrits depuis sa sortie.", "Toute la population mondiale y a déjà joué."], bonnePhrase: 1,
+    sources: ["Journal en ligne spécialisé", "Vidéo d’un compte anonyme", "Blog anonyme"], bonneSource: 0,
+    explication: "« Une étude » sans nom ni lien, c’est un signal d’alerte ! Le journal spécialisé rappelle qu’Epic Games parle de centaines de millions de joueurs inscrits, pas de 3 milliards par jour." }
+];
+
+const $ = (id) => document.getElementById(id);
+function annoncer(t) { $("annonce").textContent = ""; setTimeout(() => { $("annonce").textContent = t; }, 50); }
+function montrer(id) {
+  ["accueil", "partie", "fin"].forEach((s) => { $(s).hidden = s !== id; });
+  window.scrollTo(0, 0);
+}
+function el(tag, cls, texte) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (texte) e.textContent = texte;
+  return e;
+}
+function normaliser(t) {
+  return t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[-’']/g, " ");
+}
+
+let signalees, essais, points1, points2, premierEnvoi;
+
+function demarrer() {
+  signalees = new Set();
+  essais = 0;
+  points1 = null; // points de la partie 1, fixés au premier envoi
+  points2 = null;
+  premierEnvoi = true;
+  $("bloc-enquete").hidden = false;
+  $("bloc-reparer").hidden = true;
+  $("phase-1").setAttribute("aria-current", "step"); $("phase-1").classList.remove("faite");
+  $("phase-2").removeAttribute("aria-current");
+  $("consigne-courte").textContent = "Signale les 5 phrases inventées.";
+  $("feedback-1").className = "feedback"; $("feedback-1").innerHTML = "";
+  $("valider").textContent = "Valider mes signalements";
+  $("champ").value = "";
+  $("zone-resultats").innerHTML = "";
+  majPoints();
+  dessinerFiche();
+  montrer("partie");
+  $("titre-partie").focus();
+}
+
+function majPoints() { $("points").textContent = (points1 || 0) + (points2 || 0); }
+
+function dessinerFiche() {
+  const ul = $("fiche");
+  ul.innerHTML = "";
+  FICHE.forEach((p, i) => {
+    const actif = signalees.has(p.id);
+    const b = el("button", "phrase");
+    b.setAttribute("aria-pressed", String(actif));
+    b.append(el("span", "txt", p.texte));
+    if (actif) b.append(el("span", "etiquette", "Signalée comme inventée"));
+    b.addEventListener("click", () => {
+      actif ? signalees.delete(p.id) : signalees.add(p.id);
+      dessinerFiche();
+      $("fiche").querySelectorAll(".phrase")[i].focus();
+    });
+    const li = el("li");
+    li.append(b);
+    ul.append(li);
+  });
+  $("compteur").textContent = "Phrases signalées : " + signalees.size + " (5 attendues)";
+}
+
+/* ---------- Moteur de recherche simulé ---------- */
+const MOTS_VIDES = ["le", "la", "les", "de", "des", "du", "un", "une", "et", "en", "est", "il", "qui", "quel", "quelle", "sur", "au", "a"];
+function rechercher(requete) {
+  const zone = $("zone-resultats");
+  zone.innerHTML = "";
+  const mots = normaliser(requete).split(/[^a-z0-9]+/).filter((m) => m.length >= 2 && !MOTS_VIDES.includes(m));
+  if (mots.length === 0) { zone.append(el("p", null, "Écris au moins un mot-clé pour lancer la recherche.")); return; }
+  const trouves = INDEX.map((doc) => ({
+    doc,
+    score: mots.filter((m) => doc.mots.some((k) => k === m || (m.length >= 4 && (k.startsWith(m) || (m.startsWith(k) && k.length >= 4))))).length
+  })).filter((r) => r.score > 0).sort((a, b) => b.score - a.score);
+
+  if (trouves.length === 0) {
+    zone.append(el("p", null, "Aucun résultat. Essaie d’autres mots-clés : un nom, une date, un prix, un âge…"));
+    annoncer("Aucun résultat.");
+    return;
+  }
+  zone.append(el("p", null, trouves.length + " résultat" + (trouves.length > 1 ? "s" : "") + " pour « " + requete + " » :"));
+  const ul = el("ul", "resultats");
+  trouves.forEach(({ doc }) => {
+    const li = el("li", "resultat");
+    li.append(el("p", "source", doc.source), el("p", "type", doc.type), el("p", "extrait", doc.extrait));
+    ul.append(li);
+  });
+  zone.append(ul);
+  annoncer(trouves.length + " résultats trouvés.");
+}
+
+/* ---------- Partie 1 : valider les signalements ---------- */
+function valider() {
+  essais++;
+  const fb = $("feedback-1");
+  fb.innerHTML = "";
+  const oubliees = FICHE.filter((p) => p.invente && !signalees.has(p.id));
+  const enTrop = FICHE.filter((p) => !p.invente && signalees.has(p.id));
+  if (points1 === null) {
+    points1 = Math.max(0, (5 - oubliees.length) - enTrop.length);
+    majPoints();
+  }
+
+  if (oubliees.length === 0 && enTrop.length === 0) {
+    fb.className = "feedback bon";
+    const v = el("p");
+    v.append(el("span", "verdict", "Bravo ! "), "Tu as repéré les 5 informations inventées sans te tromper.");
+    const b = el("button", "btn", "Passer à la partie 2 : Réparer");
+    b.type = "button";
+    b.addEventListener("click", allerReparer);
+    const p = el("p");
+    p.append(b);
+    fb.append(v, p);
+  } else {
+    fb.className = "feedback faux";
+    const v = el("p");
+    v.append(el("span", "verdict", "Pas encore. "));
+    if (oubliees.length > 0) v.append("Il reste " + oubliees.length + " information" + (oubliees.length > 1 ? "s inventées non signalées" : " inventée non signalée") + ". Vérifie en priorité les phrases qui contiennent un nom, un chiffre, un prix ou un âge.");
+    fb.append(v);
+    enTrop.forEach((p) => fb.append(el("p", null, "La phrase « " + p.texte + " » est exacte. Fais une recherche pour t’en assurer, puis retire ton signalement.")));
+    if (essais >= 2 && oubliees.length > 0) {
+      const pistes = { f2: "créateur", f4: "prix", f6: "âge", f7: "console", f8: "joueurs" };
+      fb.append(el("p", null, "Coup de pouce : cherche « Fortnite " + pistes[oubliees[0].id] + " »."));
+    }
+    fb.append(el("p", null, "Attention aux sources douteuses (blog anonyme, compte inconnu) : elles peuvent répéter une information fausse."));
+  }
+  fb.focus();
+  annoncer(fb.textContent);
+}
+
+/* ---------- Partie 2 : réparer ---------- */
+function allerReparer() {
+  $("bloc-enquete").hidden = true;
+  $("bloc-reparer").hidden = false;
+  $("phase-1").removeAttribute("aria-current"); $("phase-1").classList.add("faite");
+  $("phase-2").setAttribute("aria-current", "step");
+  $("consigne-courte").textContent = "Répare au moins 4 phrases sur 5.";
+  const zone = $("reparations");
+  zone.innerHTML = "";
+  REPARATIONS.forEach((r, n) => {
+    const bloc = el("div", "reparation");
+    bloc.append(el("h4", null, "Réparation " + (n + 1) + " sur 5"), el("p", "citation", "Phrase inventée : « " + r.faux + " »"));
+    [["phrase", "Quelle est la phrase correcte ?", r.phrases], ["source", "Quelle source le prouve le mieux ?", r.sources]].forEach(([genre, question, options]) => {
+      const fs = el("fieldset", "choix");
+      fs.append(el("legend", null, question));
+      options.forEach((t, k) => {
+        const lab = el("label");
+        const input = el("input");
+        input.type = "radio"; input.name = r.id + "-" + genre; input.value = String(k);
+        lab.append(input, el("span", null, t));
+        fs.append(lab);
+      });
+      bloc.append(fs);
+    });
+    const fb = el("div", "feedback");
+    fb.id = "fb-" + r.id;
+    bloc.append(fb);
+    zone.append(bloc);
+  });
+  $("feedback-2").className = "feedback"; $("feedback-2").innerHTML = "";
+  window.scrollTo(0, 0);
+  $("titre-reparer").focus();
+}
+
+function verifierReparations(e) {
+  e.preventDefault();
+  let justes = 0, incompletes = 0;
+  REPARATIONS.forEach((r) => {
+    const p = document.querySelector('input[name="' + r.id + '-phrase"]:checked');
+    const s = document.querySelector('input[name="' + r.id + '-source"]:checked');
+    const fb = $("fb-" + r.id);
+    fb.innerHTML = "";
+    if (!p || !s) {
+      incompletes++;
+      fb.className = "feedback info";
+      fb.append(el("p", null, "Choisis une phrase et une source pour cette réparation."));
+      return;
+    }
+    const bonneP = Number(p.value) === r.bonnePhrase, bonneS = Number(s.value) === r.bonneSource;
+    const v = el("p");
+    if (bonneP && bonneS) {
+      justes++;
+      fb.className = "feedback bon";
+      v.append(el("span", "verdict", "Bonne réparation. "), r.explication);
+    } else {
+      fb.className = "feedback faux";
+      const pistes = [];
+      if (!bonneP) pistes.push("la phrase n’est pas la bonne : relis ce que disent les sources fiables");
+      if (!bonneS) pistes.push("la source n’est pas la plus fiable : préfère un site officiel, un organisme ou un média reconnu");
+      v.append(el("span", "verdict", "Pas encore : "), pistes.join(" ; ") + ".");
+    }
+    fb.append(v);
+  });
+
+  const fbG = $("feedback-2");
+  fbG.innerHTML = "";
+  if (incompletes > 0) {
+    fbG.className = "feedback info";
+    fbG.append(el("p", null, "Il reste " + incompletes + " réparation" + (incompletes > 1 ? "s" : "") + " à compléter."));
+    fbG.focus();
+    annoncer(fbG.textContent);
+    return;
+  }
+  if (premierEnvoi) { points2 = justes; premierEnvoi = false; majPoints(); }
+  if (justes >= 4) {
+    terminer();
+  } else {
+    fbG.className = "feedback faux";
+    const v = el("p");
+    v.append(el("span", "verdict", justes + " réparation" + (justes > 1 ? "s justes" : " juste") + " sur 5. "),
+      "Il en faut au moins 4. Lis les explications sous chaque réparation, refais une recherche si besoin, puis vérifie à nouveau. Tu peux réessayer autant de fois que tu veux.");
+    fbG.append(v);
+    fbG.focus();
+    annoncer(fbG.textContent);
+  }
+}
+
+function terminer() {
+  const points = points1 + points2, total = 10;
+  const nb = Progression.etoiles(points, total);
+  Progression.enregistrer(MISSION, CLE, { points, total, etoiles: nb, reussi: true });
+  Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+
+  const ul = $("fiche-corrigee");
+  ul.innerHTML = "";
+  FICHE.forEach((p) => {
+    const r = REPARATIONS.find((x) => x.id === p.id);
+    const li = el("li");
+    if (r) li.append(el("span", "corrige", r.phrases[r.bonnePhrase]), " (corrigé)");
+    else li.append(p.texte);
+    ul.append(li);
+  });
+
+  $("etoiles").innerHTML = [1, 2, 3].map((i) => '<span class="' + (i <= nb ? "pleine" : "vide") + '">★</span>').join("");
+  $("score-final").textContent = points + " points sur " + total + " (enquête : " + points1 + "/5, réparation : " + points2 + "/5) · " + nb + " étoile" + (nb > 1 ? "s" : "") + " sur 3";
+  $("message-final").textContent = nb === 3
+    ? "Excellent ! Tu as mené l’enquête comme un vrai détective du numérique."
+    : nb === 2
+      ? "Bien joué ! Tu as réussi la mission. Pense à croiser plusieurs sources fiables avant de valider une information."
+      : "Mission réussie grâce à ta persévérance ! Les points comptent tes réponses du premier coup : rejoue si tu veux gagner plus d’étoiles.";
+  montrer("fin");
+  $("titre-fin").focus();
+  annoncer("Mission réussie. " + $("score-final").textContent);
+}
+
+$("form-recherche").addEventListener("submit", (e) => { e.preventDefault(); rechercher($("champ").value); });
+$("valider").addEventListener("click", valider);
+$("bloc-reparer").addEventListener("submit", verifierReparations);
+$("commencer").addEventListener("click", demarrer);
+$("rejouer").addEventListener("click", demarrer);
+Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+</script>
+</body>
+</html>

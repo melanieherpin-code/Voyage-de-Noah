@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeu 1 – Le chatbot piégé · Mission 1 · Le Voyage de Noah</title>
+<link rel="stylesheet" href="../../commun/labyrinthe.css">
+<style>
+  .infos-partie { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--texte-doux); font-weight: 600; margin-bottom: 14px; }
+  .infos-partie strong { color: var(--texte); }
+  .jeu { display: grid; grid-template-columns: 1fr 1.25fr; gap: 18px; align-items: start; }
+  @media (max-width: 860px) { .jeu { grid-template-columns: 1fr; } }
+
+  /* Menu des questions */
+  .menu h3 { color: var(--cyan); }
+  .menu ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+  .question {
+    width: 100%; text-align: left; font: inherit; color: var(--texte); cursor: pointer;
+    background: rgba(255,255,255,.05); border: 2px solid var(--bord); border-radius: 10px; padding: 10px 12px;
+  }
+  .question:hover:not([disabled]) { border-color: var(--cyan); background: rgba(142,202,230,.12); }
+  .question[disabled] { cursor: default; color: var(--texte-doux); }
+  .question .etat { display: block; font-size: 13px; font-weight: 800; margin-top: 2px; }
+  .question .etat.hallu { color: var(--rose); }
+  .question .etat.ok { color: var(--neon); }
+
+  /* Fenêtre du chatbot */
+  .chat { min-height: 260px; display: flex; flex-direction: column; gap: 12px; }
+  .chat .entete-chat { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--violet); font-weight: 800; }
+  .msg { max-width: 88%; padding: 10px 14px; border-radius: 14px; }
+  .msg.eleve { align-self: flex-end; background: rgba(142,202,230,.18); border: 1px solid var(--bord); border-radius: 14px 14px 4px 14px; }
+  .msg.ia { align-self: flex-start; background: rgba(169,139,255,.14); border: 1px solid rgba(169,139,255,.5); border-radius: 14px 14px 14px 4px; }
+  .msg .qui { display: block; font-size: 12px; font-weight: 800; color: var(--texte-doux); margin-bottom: 2px; }
+  .ecrit { letter-spacing: 4px; font-weight: 800; }
+  .vide { color: var(--texte-doux); font-style: italic; margin: auto 0; text-align: center; }
+
+  .decision { margin-top: 4px; }
+  .decision h3 { color: var(--cyan); }
+  .signes { display: grid; gap: 8px; margin-top: 8px; }
+  .signe {
+    font: inherit; color: var(--texte); text-align: left; cursor: pointer;
+    background: rgba(255,255,255,.05); border: 2px solid var(--violet); border-radius: 10px; padding: 10px 12px;
+  }
+  .signe:hover:not([disabled]) { background: rgba(169,139,255,.18); }
+  .signe[disabled] { cursor: default; opacity: .75; }
+  .signes-liste { margin: 4px 0 0; padding-left: 22px; }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <p class="fil">Le Voyage de Noah · Chapitre 3 · Mission 1 : La fiche piégée</p>
+  <nav class="couloir" id="couloir" aria-label="Progression dans la mission"></nav>
+</div>
+
+<main>
+  <p class="sr-only" id="annonce" aria-live="polite"></p>
+
+  <!-- ========== ACCUEIL ========== -->
+  <section id="accueil" aria-labelledby="titre-jeu">
+    <div class="banniere">
+      <img src="../../commun/labyrinthe.jpg" alt="">
+      <span class="credit">Image réalisée avec une intelligence artificielle</span>
+      <div class="texte">
+        <h1 id="titre-jeu" tabindex="-1">Jeu 1 : Le chatbot piégé</h1>
+        <p class="objectif">Objectif : repérer quand une IA invente une réponse.</p>
+        <p class="duree">Durée : 4 min</p>
+      </div>
+    </div>
+
+    <div class="noah">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle"><strong>Noah :</strong> « À l’entrée du labyrinthe, un chatbot répond à toutes les questions. Il a toujours l’air très sûr de lui… Mais certaines de ses réponses sont des illusions ! Aide-moi à les démasquer. »</p>
+    </div>
+
+    <div class="consigne">
+      <h2>Consigne</h2>
+      <p>Choisis une question dans le menu et lis la réponse du chatbot. Décide si tu peux lui faire confiance ou si c’est une <strong>hallucination</strong>. Si c’est une hallucination, trouve le <strong>signal d’alerte</strong>. Il y a 8 questions.</p>
+    </div>
+
+    <div class="memo">
+      <strong>Les 4 signaux d’alerte d’une hallucination</strong>
+      <ol class="signes-liste">
+        <li>L’IA <strong>accepte une idée fausse</strong> cachée dans la question.</li>
+        <li>L’IA <strong>invente une source</strong> : une citation, un livre, une étude.</li>
+        <li>L’IA <strong>mélange du vrai et du faux</strong> dans la même réponse.</li>
+        <li>L’IA donne un <strong>chiffre très précis sans preuve</strong>.</li>
+      </ol>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn" id="commencer">Interroger le chatbot</button>
+    </div>
+  </section>
+
+  <!-- ========== PARTIE ========== -->
+  <section id="partie" aria-labelledby="titre-partie" hidden>
+    <h2 id="titre-partie" tabindex="-1" class="sr-only">Interroger le chatbot</h2>
+    <div class="infos-partie">
+      <span id="compteur">Questions posées : 0 / 8</span>
+      <span>Points : <strong id="points">0</strong> / 8</span>
+    </div>
+
+    <div class="jeu">
+      <div class="verre menu">
+        <h3>Pose une question au chatbot</h3>
+        <ul id="menu"></ul>
+      </div>
+
+      <div>
+        <div class="verre chat" id="chat" aria-live="polite">
+          <p class="entete-chat">Chatbot du labyrinthe</p>
+          <p class="vide">Choisis une question dans le menu.</p>
+        </div>
+
+        <div class="verre decision" id="decision" hidden>
+          <h3 id="titre-decision" tabindex="-1">Peux-tu faire confiance à cette réponse ?</h3>
+          <div class="actions" id="choix-verdict">
+            <button class="btn" data-verdict="confiance">Je peux lui faire confiance</button>
+            <button class="btn" data-verdict="hallu">C’est une hallucination</button>
+          </div>
+          <div id="zone-signes" hidden>
+            <p style="margin:12px 0 0"><strong>Quel signal d’alerte as-tu repéré ?</strong></p>
+            <div class="signes" id="signes" role="group" aria-label="Signaux d’alerte"></div>
+          </div>
+          <div class="feedback" id="feedback" tabindex="-1"></div>
+          <div class="actions" id="zone-suivante" hidden>
+            <button class="btn" id="question-suivante">Question suivante</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FIN DU JEU ========== -->
+  <section id="fin" class="fin" aria-labelledby="titre-fin" hidden>
+    <h2 id="titre-fin" tabindex="-1">Porte ouverte !</h2>
+    <p class="etoiles" id="etoiles" aria-hidden="true"></p>
+    <p class="score-grand" id="score-final"></p>
+    <p id="message-final"></p>
+
+    <div class="verre">
+      <h3>Ce que tu as appris</h3>
+      <p style="margin:0 0 8px">Une IA ne « sait » pas : elle fabrique la réponse la plus <strong>probable</strong>. Quand elle ne trouve pas, elle peut inventer, toujours avec le même ton sûr de lui. C’est une <strong>hallucination</strong>.</p>
+      <p style="margin:0 0 4px">Les signaux d’alerte :</p>
+      <ul class="signes-liste">
+        <li>elle accepte une idée fausse cachée dans la question ;</li>
+        <li>elle invente une source (citation, livre, étude) ;</li>
+        <li>elle mélange du vrai et du faux ;</li>
+        <li>elle donne un chiffre très précis sans preuve.</li>
+      </ul>
+      <p style="margin:10px 0 0">Et quand la réponse est juste ? Tu ne peux le savoir qu’en <strong>vérifiant</strong>. C’est la première étape de la méthode : <strong>je repère</strong> ce qui doit être vérifié.</p>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn secondaire" id="rejouer">Rejouer</button>
+      <a class="btn" href="../jeu2/">Jeu suivant : Fiable ou douteux ?</a>
+    </div>
+  </section>
+</main>
+
+<script src="../../commun/progression.js"></script>
+<script>
+const MISSION = "mission1", CLE = "jeu1";
+
+const SIGNES = {
+  piege: "Il accepte une idée fausse cachée dans la question",
+  source: "Il invente une source (citation, livre, étude)",
+  melange: "Il mélange du vrai et du faux",
+  chiffre: "Il donne un chiffre très précis sans preuve"
+};
+
+const QUESTIONS = [
+  { q: "Pourquoi Napoléon a-t-il inventé le téléphone ?",
+    r: "Napoléon a inventé le téléphone vers 1810 pour donner plus vite ses ordres à ses généraux pendant les batailles. C’est l’une de ses inventions les plus célèbres.",
+    hallu: true, signe: "piege",
+    explication: "Napoléon n’a pas inventé le téléphone ! Le brevet du téléphone a été déposé par Alexander Graham Bell en 1876. La question contenait une idée fausse, et l’IA l’a acceptée au lieu de la corriger : elle a inventé une histoire pour « répondre » quand même." },
+  { q: "Donne-moi une citation de Victor Hugo sur l’intelligence artificielle.",
+    r: "Bien sûr ! Victor Hugo a écrit en 1862 : « Les machines qui pensent seront les lumières de demain. »",
+    hallu: true, signe: "source",
+    explication: "Cette citation est inventée. Victor Hugo est mort en 1885, bien avant l’invention des ordinateurs : il n’a jamais écrit sur l’intelligence artificielle. L’IA a fabriqué une phrase « qui ressemble » à du Victor Hugo." },
+  { q: "Quelle est la capitale de l’Australie ?",
+    r: "La capitale de l’Australie est Canberra. Ce n’est pas Sydney, même si c’est la plus grande ville du pays.",
+    hallu: false,
+    explication: "C’est exact : la capitale de l’Australie est bien Canberra. Une IA ne se trompe pas tout le temps… mais tu ne peux en être sûr qu’après avoir vérifié dans une source fiable (un atlas, un manuel, un site officiel)." },
+  { q: "Quel livre me conseilles-tu pour mon exposé sur les volcans ?",
+    r: "Je te conseille « Les volcans en colère » de Marie Duroc, publié en 2015. C’est le livre de référence sur le sujet pour les collégiens.",
+    hallu: true, signe: "source",
+    explication: "Dans ce jeu, ce livre et son autrice ont été inventés par l’IA. Les IA font souvent ça : elles fabriquent un titre et un nom qui ont l’air réels. Avant de chercher un livre conseillé par une IA, vérifie qu’il existe dans le catalogue du CDI ou d’une bibliothèque." },
+  { q: "Qui était Marie Curie ?",
+    r: "Marie Curie est une scientifique née en Pologne. Elle a reçu deux prix Nobel pour ses travaux sur la radioactivité. Elle a aussi inventé l’ampoule électrique.",
+    hallu: true, signe: "melange",
+    explication: "Le début est exact : Marie Curie est née en Pologne et a reçu deux prix Nobel (en 1903 et en 1911). Mais elle n’a pas inventé l’ampoule électrique ! L’IA a glissé une erreur au milieu de vraies informations : c’est ce qui rend ce piège difficile à voir." },
+  { q: "Combien d’os y a-t-il dans le corps d’un adulte ?",
+    r: "Le squelette d’un adulte compte 206 os.",
+    hallu: false,
+    explication: "C’est exact : un adulte a 206 os. Tu pourras le vérifier dans ton manuel de SVT." },
+  { q: "Combien de collégiens français utilisent une IA chaque jour ?",
+    r: "Exactement 73,4 % des collégiens français utilisent une IA chaque jour.",
+    hallu: true, signe: "chiffre",
+    explication: "Dans ce jeu, ce chiffre a été inventé par l’IA. Un chiffre très précis (73,4 %) donne l’impression d’être sérieux… mais d’où vient-il ? Aucune enquête n’est citée. Un chiffre sans source, on ne le reprend pas : on cherche d’abord qui l’a mesuré." },
+  { q: "Qui a gagné la Coupe du monde de football 2018 ?",
+    r: "C’est la France qui a gagné la Coupe du monde 2018, en battant la Croatie 4 à 2 en finale.",
+    hallu: false,
+    explication: "C’est exact : la France a battu la Croatie 4 à 2 en finale, le 15 juillet 2018. Cette fois, la réponse est juste, mais le bon réflexe reste de vérifier." }
+];
+
+const $ = (id) => document.getElementById(id);
+const reduit = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function annoncer(t) { $("annonce").textContent = ""; setTimeout(() => { $("annonce").textContent = t; }, 50); }
+function montrer(id) {
+  ["accueil", "partie", "fin"].forEach((s) => { $(s).hidden = s !== id; });
+  window.scrollTo(0, 0);
+}
+function el(tag, cls, texte) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (texte) e.textContent = texte;
+  return e;
+}
+
+let points, faites, actuelle, rateeActuelle;
+
+function demarrer() {
+  points = 0;
+  faites = new Map(); // index -> "hallu" | "ok"
+  $("points").textContent = "0";
+  majCompteur();
+  dessinerMenu();
+  viderChat();
+  $("decision").hidden = true;
+  montrer("partie");
+  $("menu").querySelector("button").focus();
+}
+
+function majCompteur() { $("compteur").textContent = "Questions posées : " + faites.size + " / " + QUESTIONS.length; }
+
+function dessinerMenu(enCours) {
+  const ul = $("menu");
+  ul.innerHTML = "";
+  QUESTIONS.forEach((item, i) => {
+    const b = el("button", "question");
+    b.append(item.q);
+    if (faites.has(i)) {
+      const hallu = faites.get(i) === "hallu";
+      b.append(el("span", "etat " + (hallu ? "hallu" : "ok"), hallu ? "Hallucination démasquée" : "Réponse juste"));
+      b.disabled = true;
+    } else if (enCours) {
+      b.disabled = true; // on finit la question en cours avant d’en poser une autre
+    }
+    b.addEventListener("click", () => poser(i));
+    const li = el("li");
+    li.append(b);
+    ul.append(li);
+  });
+}
+
+function viderChat() {
+  const chat = $("chat");
+  chat.innerHTML = "";
+  chat.append(el("p", "entete-chat", "Chatbot du labyrinthe"), el("p", "vide", "Choisis une question dans le menu."));
+}
+
+function bulle(classe, qui, texte) {
+  const m = el("div", "msg " + classe + " apparait");
+  m.append(el("span", "qui", qui));
+  m.append(texte);
+  return m;
+}
+
+function poser(i) {
+  actuelle = i;
+  rateeActuelle = false;
+  dessinerMenu(true);
+  const chat = $("chat");
+  chat.innerHTML = "";
+  chat.append(el("p", "entete-chat", "Chatbot du labyrinthe"));
+  chat.append(bulle("eleve", "Toi", QUESTIONS[i].q));
+  $("decision").hidden = true;
+  if (reduit) return repondre();
+  const attente = bulle("ia", "Chatbot", "");
+  attente.append(el("span", "ecrit", "…"));
+  attente.setAttribute("aria-label", "Le chatbot écrit");
+  chat.append(attente);
+  setTimeout(() => { attente.remove(); repondre(); }, 900);
+}
+
+function repondre() {
+  const item = QUESTIONS[actuelle];
+  $("chat").append(bulle("ia", "Chatbot", item.r));
+  $("choix-verdict").querySelectorAll("button").forEach((b) => { b.disabled = false; });
+  $("zone-signes").hidden = true;
+  $("feedback").className = "feedback"; $("feedback").innerHTML = "";
+  $("zone-suivante").hidden = true;
+  $("decision").hidden = false;
+  $("titre-decision").focus();
+}
+
+function verdict(choix) {
+  const item = QUESTIONS[actuelle];
+  const fb = $("feedback");
+  if ((choix === "hallu") !== item.hallu) {
+    rateeActuelle = true;
+    fb.className = "feedback faux";
+    fb.innerHTML = '<p><span class="verdict">Pas encore.</span></p>';
+    fb.append(el("p", null, choix === "confiance"
+      ? "Relis bien la réponse : y a-t-il une idée fausse, une source inventée, une erreur cachée ou un chiffre sans preuve ? Essaie encore."
+      : "Cette réponse est juste ! Une IA ne se trompe pas à chaque fois. Ici, aucun signal d’alerte : essaie encore."));
+    fb.focus();
+    annoncer(fb.textContent);
+    return;
+  }
+  $("choix-verdict").querySelectorAll("button").forEach((b) => { b.disabled = true; });
+  if (item.hallu) {
+    fb.className = "feedback info";
+    fb.innerHTML = "<p>Oui, c’est une hallucination ! Maintenant, trouve le signal d’alerte.</p>";
+    const zone = $("signes");
+    zone.innerHTML = "";
+    Object.entries(SIGNES).forEach(([cle, texte]) => {
+      const b = el("button", "signe", texte);
+      b.addEventListener("click", () => signe(cle, b));
+      zone.append(b);
+    });
+    $("zone-signes").hidden = false;
+    zone.querySelector("button").focus();
+    annoncer(fb.textContent);
+  } else {
+    terminerQuestion();
+  }
+}
+
+function signe(cle, bouton) {
+  const item = QUESTIONS[actuelle];
+  const fb = $("feedback");
+  if (cle !== item.signe) {
+    rateeActuelle = true;
+    bouton.disabled = true;
+    fb.className = "feedback faux";
+    fb.innerHTML = '<p><span class="verdict">Pas ce signal-là.</span> Relis la question et la réponse du chatbot, puis choisis un autre signal.</p>';
+    annoncer(fb.textContent);
+    $("signes").querySelector("button:not([disabled])").focus();
+    return;
+  }
+  $("signes").querySelectorAll("button").forEach((b) => { b.disabled = true; });
+  terminerQuestion();
+}
+
+function terminerQuestion() {
+  const item = QUESTIONS[actuelle];
+  if (!rateeActuelle) points++;
+  faites.set(actuelle, item.hallu ? "hallu" : "ok");
+  $("points").textContent = points;
+  majCompteur();
+  const fb = $("feedback");
+  fb.className = "feedback bon";
+  fb.innerHTML = '<p><span class="verdict">' + (item.hallu ? "Hallucination démasquée !" : "Bien vu, la réponse est juste.") + "</span>"
+    + (rateeActuelle ? "" : " +1 point") + "</p>";
+  if (item.hallu) fb.append(el("p", null, "Signal d’alerte : " + SIGNES[item.signe].toLowerCase() + "."));
+  fb.append(el("p", null, item.explication));
+  $("question-suivante").textContent = faites.size === QUESTIONS.length ? "Voir mon résultat" : "Question suivante";
+  $("zone-suivante").hidden = false;
+  dessinerMenu(true);
+  fb.focus();
+  annoncer(fb.textContent);
+}
+
+function suite() {
+  if (faites.size === QUESTIONS.length) return terminer();
+  dessinerMenu();
+  viderChat();
+  $("decision").hidden = true;
+  $("menu").querySelector("button:not([disabled])").focus();
+}
+
+function terminer() {
+  const nb = Progression.etoiles(points, QUESTIONS.length);
+  Progression.enregistrer(MISSION, CLE, { points, total: QUESTIONS.length, etoiles: nb });
+  Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+  $("etoiles").innerHTML = [1, 2, 3].map((i) => '<span class="' + (i <= nb ? "pleine" : "vide") + '">★</span>').join("");
+  $("score-final").textContent = points + " réponses trouvées du premier coup sur " + QUESTIONS.length + " · " + nb + " étoile" + (nb > 1 ? "s" : "") + " sur 3";
+  $("message-final").textContent = nb === 3
+    ? "Excellent ! Le chatbot n’a pas réussi à te piéger. Noah peut avancer dans le labyrinthe."
+    : nb === 2
+      ? "Bien joué ! Relis les signaux d’alerte ci-dessous : ils t’aideront dans les prochains jeux."
+      : "Tu as démasqué toutes les hallucinations, bravo pour ta persévérance ! Relis les signaux d’alerte ci-dessous, puis rejoue si tu veux gagner plus d’étoiles.";
+  montrer("fin");
+  $("titre-fin").focus();
+  annoncer("Jeu terminé. " + $("score-final").textContent);
+}
+
+$("choix-verdict").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => verdict(b.dataset.verdict)));
+$("question-suivante").addEventListener("click", suite);
+$("commencer").addEventListener("click", demarrer);
+$("rejouer").addEventListener("click", demarrer);
+Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+</script>
+</body>
+</html>

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeu 2 – Fiable ou douteux ? · Mission 1 · Le Voyage de Noah</title>
+<link rel="stylesheet" href="../../commun/labyrinthe.css">
+<style>
+  .plateau { display: grid; gap: 18px; }
+  .infos-partie { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--texte-doux); font-weight: 600; }
+  .infos-partie strong { color: var(--texte); }
+
+  /* Carte de source */
+  .carte-source {
+    max-width: 620px; margin: 0 auto; width: 100%;
+    background: linear-gradient(160deg, rgba(35,40,110,.95), rgba(18,20,59,.95));
+    border: 2px solid var(--cyan); border-radius: 16px; padding: 18px 22px;
+    box-shadow: 0 0 22px rgba(142,202,230,.35);
+  }
+  .carte-source .type { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--cyan); font-weight: 800; margin: 0; }
+  .carte-source .nom { font-size: 22px; font-weight: 800; margin: 2px 0 10px; }
+  .carte-source dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; }
+  .carte-source dt { font-weight: 800; color: var(--texte-doux); }
+  .carte-source dd { margin: 0; }
+  .carte-source .extrait { font-style: italic; }
+
+  /* Les trois boîtes */
+  .boites { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  @media (max-width: 720px) { .boites { grid-template-columns: 1fr; } }
+  .boite {
+    font: inherit; color: var(--texte); text-align: left; cursor: pointer;
+    background: rgba(255,255,255,.05); border: 2px solid; border-radius: 14px; padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 4px; transition: background .2s, box-shadow .2s;
+  }
+  .boite .titre { font-size: 19px; font-weight: 800; }
+  .boite .aide { font-size: 14px; color: var(--texte-doux); }
+  .boite .nb { font-size: 14px; font-weight: 600; }
+  .boite.fiable { border-color: var(--neon); }
+  .boite.fiable .titre { color: var(--neon); }
+  .boite.croiser { border-color: var(--ambre); }
+  .boite.croiser .titre { color: var(--ambre); }
+  .boite.douteuse { border-color: var(--rose); }
+  .boite.douteuse .titre { color: var(--rose); }
+  .boite:hover:not([disabled]) { background: rgba(255,255,255,.1); box-shadow: 0 0 14px rgba(142,202,230,.35); }
+  .boite[disabled] { cursor: default; opacity: .75; }
+  .boite.pulse { animation: porte .8s ease-out; }
+
+  .bilan-categories { display: grid; gap: 8px; margin: 8px 0 0; padding: 0; list-style: none; }
+  .bilan-categories strong.fiable { color: var(--neon); }
+  .bilan-categories strong.croiser { color: var(--ambre); }
+  .bilan-categories strong.douteuse { color: var(--rose); }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <p class="fil">Le Voyage de Noah · Chapitre 3 · Mission 1 : La fiche piégée</p>
+  <nav class="couloir" id="couloir" aria-label="Progression dans la mission"></nav>
+</div>
+
+<main>
+  <p class="sr-only" id="annonce" aria-live="polite"></p>
+
+  <!-- ========== ACCUEIL ========== -->
+  <section id="accueil" aria-labelledby="titre-jeu">
+    <div class="banniere">
+      <img src="../../commun/labyrinthe.jpg" alt="">
+      <span class="credit">Image réalisée avec une intelligence artificielle</span>
+      <div class="texte">
+        <h1 id="titre-jeu" tabindex="-1">Jeu 2 : Fiable ou douteux ?</h1>
+        <p class="objectif">Objectif : reconnaître une source fiable avant de lui faire confiance.</p>
+        <p class="duree">Durée : 4 min</p>
+      </div>
+    </div>
+
+    <div class="noah">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle"><strong>Noah :</strong> « Le moteur de recherche du labyrinthe me renvoie plein de sources… mais certaines sont des illusions ! Aide-moi à trier celles qu’on peut croire. »</p>
+    </div>
+
+    <div class="consigne">
+      <h2>Consigne</h2>
+      <p>Dix sources vont apparaître une par une. Pour chacune, choisis la bonne boîte : <strong>Fiable</strong>, <strong>À croiser</strong> ou <strong>Douteuse</strong>. Si tu te trompes, la carte reviendra plus tard : tu pourras réessayer.</p>
+    </div>
+
+    <div class="memo">
+      <strong>Les 3 questions du détective</strong>
+      <ol>
+        <li><strong>Qui</strong> a écrit ? L’auteur est-il connu et compétent ?</li>
+        <li><strong>Comment</strong> le sait-il ? Cite-t-il ses sources, ses preuves ?</li>
+        <li>Est-ce <strong>confirmé ailleurs</strong> par d’autres sources fiables ?</li>
+      </ol>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn" id="commencer">Commencer le tri</button>
+    </div>
+  </section>
+
+  <!-- ========== PARTIE ========== -->
+  <section id="partie" aria-labelledby="titre-partie" hidden>
+    <h2 id="titre-partie" tabindex="-1" class="sr-only">Tri des sources</h2>
+    <div class="plateau">
+      <div class="infos-partie">
+        <span id="compteur">Carte 1</span>
+        <span>Points : <strong id="points">0</strong> / 10</span>
+      </div>
+
+      <article class="carte-source apparait" id="carte" aria-labelledby="carte-nom">
+        <p class="type" id="carte-type"></p>
+        <h3 class="nom" id="carte-nom"></h3>
+        <dl>
+          <dt>Qui ?</dt><dd id="carte-qui"></dd>
+          <dt>Ce qu’il dit</dt><dd class="extrait" id="carte-extrait"></dd>
+        </dl>
+      </article>
+
+      <div class="boites" role="group" aria-label="Dans quelle boîte ranges-tu cette source ?">
+        <button class="boite fiable" data-boite="fiable">
+          <span class="titre">Fiable</span>
+          <span class="aide">Auteur identifié et compétent, informations vérifiées</span>
+          <span class="nb" id="nb-fiable">0 carte</span>
+        </button>
+        <button class="boite croiser" data-boite="croiser">
+          <span class="titre">À croiser</span>
+          <span class="aide">Utile, mais à vérifier avec une source fiable</span>
+          <span class="nb" id="nb-croiser">0 carte</span>
+        </button>
+        <button class="boite douteuse" data-boite="douteuse">
+          <span class="titre">Douteuse</span>
+          <span class="aide">Auteur inconnu, aucune preuve, on ne s’y fie pas</span>
+          <span class="nb" id="nb-douteuse">0 carte</span>
+        </button>
+      </div>
+
+      <div class="feedback" id="feedback" tabindex="-1"></div>
+      <div class="actions centre" id="zone-suivante" hidden>
+        <button class="btn" id="carte-suivante">Carte suivante</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FIN DU JEU ========== -->
+  <section id="fin" class="fin" aria-labelledby="titre-fin" hidden>
+    <h2 id="titre-fin" tabindex="-1">Porte ouverte !</h2>
+    <p class="etoiles" id="etoiles" aria-hidden="true"></p>
+    <p class="score-grand" id="score-final"></p>
+    <p id="message-final"></p>
+
+    <div class="verre">
+      <h3>Ce que tu as appris</h3>
+      <ul class="bilan-categories">
+        <li><strong class="fiable">Fiable</strong> : organisme officiel, journal avec un auteur identifié, manuel scolaire.</li>
+        <li><strong class="croiser">À croiser</strong> : encyclopédie collaborative, vidéo de vulgarisation, <strong>réponse d’une IA</strong>. Ces sources peuvent être utiles, mais on vérifie toujours avec une source fiable.</li>
+        <li><strong class="douteuse">Douteuse</strong> : auteur inconnu, aucune preuve, message qui pousse à partager vite.</li>
+      </ul>
+      <p style="margin:12px 0 0">Retiens les 3 questions du détective : <strong>Qui</strong> a écrit ? <strong>Comment</strong> le sait-il ? Est-ce <strong>confirmé ailleurs</strong> ?</p>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn secondaire" id="rejouer">Rejouer</button>
+      <a class="btn" id="jeu-suivant" href="../jeu3/">Jeu suivant : La fiche Pesquet</a>
+    </div>
+  </section>
+</main>
+
+<script src="../../commun/progression.js"></script>
+<script>
+const MISSION = "mission1", CLE = "jeu2";
+
+const NOMS_BOITES = { fiable: "Fiable", croiser: "À croiser", douteuse: "Douteuse" };
+const CARTES = [
+  { type: "Site d’un organisme officiel", nom: "esa.int – Agence spatiale européenne",
+    qui: "Organisme public européen ; pages rédigées par des spécialistes de l’espace.",
+    extrait: "« Thomas Pesquet est né à Rouen en 1978. »", boite: "fiable",
+    explication: "C’est un organisme officiel : les auteurs sont identifiés et experts du sujet." },
+  { type: "Blog", nom: "astuces-gaming-gratuit",
+    qui: "Auteur inconnu, page remplie de publicités.",
+    extrait: "« Fortnite c’est PEGI 3, tout le monde peut jouer !!! »", boite: "douteuse",
+    explication: "On ne sait pas qui écrit, et aucune preuve n’est donnée. D’ailleurs, l’information est fausse : Fortnite est classé PEGI 12." },
+  { type: "Intelligence artificielle", nom: "Réponse d’un chatbot d’IA",
+    qui: "Texte généré automatiquement, aucune source indiquée.",
+    extrait: "« La photosynthèse permet aux plantes de fabriquer leur nourriture grâce à la lumière. »", boite: "croiser",
+    explication: "Ici, la réponse est juste… mais tu ne peux pas le savoir sans vérifier ! Une IA peut halluciner : elle donne une réponse probable, pas forcément vraie." },
+  { type: "Presse", nom: "Article d’un quotidien national",
+    qui: "Signé par une journaliste, publié hier.",
+    extrait: "« Une nouvelle fusée européenne a décollé ce matin depuis la Guyane. »", boite: "fiable",
+    explication: "L’autrice est identifiée, la rédaction du journal vérifie les informations et l’article est daté." },
+  { type: "Réseau social", nom: "Compte vidéo « InfoChoc2026 »",
+    qui: "Compte créé le mois dernier, 3 abonnés, aucune source.",
+    extrait: "« Le collège sera fermé toute l’année prochaine ! »", boite: "douteuse",
+    explication: "Compte inconnu, sans preuve, avec un titre choc : ce sont trois signaux d’alerte. Pour une info sur ton collège, la source fiable, c’est l’ENT ou l’administration." },
+  { type: "Encyclopédie", nom: "Encyclopédie collaborative en ligne",
+    qui: "Articles écrits par des bénévoles ; sources listées en bas de page.",
+    extrait: "« Fortnite est un jeu vidéo sorti en 2017. »", boite: "croiser",
+    explication: "C’est souvent un bon point de départ, mais tout le monde peut la modifier : vérifie les sources citées en bas de l’article." },
+  { type: "Messagerie", nom: "Message transféré plusieurs fois",
+    qui: "Personne ne sait qui l’a écrit au départ.",
+    extrait: "« Partagez vite avant que ce soit supprimé !!! »", boite: "douteuse",
+    explication: "Auteur inconnu, et l’urgence (« partagez vite ») sert à t’empêcher de réfléchir avant de partager." },
+  { type: "Livre scolaire", nom: "Ton manuel de SVT",
+    qui: "Écrit par des enseignants, relu par un éditeur scolaire.",
+    extrait: "« Le cœur est un muscle qui fait circuler le sang. »", boite: "fiable",
+    explication: "Les auteurs sont des enseignants et le contenu a été relu et vérifié avant d’être publié." },
+  { type: "Vidéo", nom: "Vidéo d’un vulgarisateur scientifique connu",
+    qui: "Il explique les sciences en vidéo et cite ses sources dans la description.",
+    extrait: "« Voici comment les fusées quittent l’atmosphère. »", boite: "croiser",
+    explication: "Pratique pour comprendre, mais ce n’est pas un organisme officiel : vérifie les sources qu’il cite." },
+  { type: "Forum", nom: "Forum de discussion",
+    qui: "Un pseudo, « Kevdu33 », sans aucune preuve.",
+    extrait: "« Je suis sûr à 100 %, c’est mon cousin qui me l’a dit. »", boite: "douteuse",
+    explication: "Un pseudo inconnu et « mon cousin me l’a dit » : ce n’est pas une preuve, même si le ton est très sûr." }
+];
+
+const $ = (id) => document.getElementById(id);
+function annoncer(t) { $("annonce").textContent = ""; setTimeout(() => { $("annonce").textContent = t; }, 50); }
+function montrer(id) {
+  ["accueil", "partie", "fin"].forEach((s) => { $(s).hidden = s !== id; });
+  window.scrollTo(0, 0);
+}
+
+let pile, points, rangees, dejaRatees, carteActuelle;
+
+function demarrer() {
+  pile = CARTES.map((c, i) => i);
+  points = 0;
+  rangees = { fiable: 0, croiser: 0, douteuse: 0 };
+  dejaRatees = new Set();
+  majBoites();
+  $("points").textContent = "0";
+  montrer("partie");
+  carteSuivante();
+}
+
+function majBoites() {
+  for (const b of ["fiable", "croiser", "douteuse"]) $("nb-" + b).textContent = rangees[b] + (rangees[b] > 1 ? " cartes" : " carte");
+}
+
+function carteSuivante() {
+  if (pile.length === 0) return terminer();
+  carteActuelle = pile.shift();
+  const c = CARTES[carteActuelle];
+  $("carte-type").textContent = c.type;
+  $("carte-nom").textContent = c.nom;
+  $("carte-qui").textContent = c.qui;
+  $("carte-extrait").textContent = c.extrait;
+  const restantes = pile.length + 1;
+  $("compteur").textContent = "Cartes restantes : " + restantes;
+  const carte = $("carte");
+  carte.classList.remove("apparait"); void carte.offsetWidth; carte.classList.add("apparait");
+  $("feedback").className = "feedback"; $("feedback").innerHTML = "";
+  $("zone-suivante").hidden = true;
+  document.querySelectorAll(".boite").forEach((b) => { b.disabled = false; });
+  document.querySelector(".boite").focus();
+  annoncer("Nouvelle carte : " + c.nom + ". " + c.qui + " " + c.extrait);
+}
+
+function choisir(boite) {
+  const c = CARTES[carteActuelle];
+  const fb = $("feedback");
+  document.querySelectorAll(".boite").forEach((b) => { b.disabled = true; });
+  fb.innerHTML = "";
+  if (boite === c.boite) {
+    rangees[boite]++;
+    if (!dejaRatees.has(carteActuelle)) points++;
+    $("points").textContent = points;
+    majBoites();
+    const el = document.querySelector('.boite[data-boite="' + boite + '"]');
+    el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse");
+    fb.className = "feedback bon";
+    fb.innerHTML = '<p><span class="verdict">Bien rangé !</span> Cette source est <strong>' + NOMS_BOITES[boite].toLowerCase() + "</strong>.</p>";
+    fb.append(Object.assign(document.createElement("p"), { textContent: c.explication }));
+  } else {
+    dejaRatees.add(carteActuelle);
+    pile.push(carteActuelle);
+    fb.className = "feedback faux";
+    fb.innerHTML = '<p><span class="verdict">Pas encore.</span> Ce n’est pas une source « ' + NOMS_BOITES[boite].toLowerCase() + " ».</p>";
+    fb.append(Object.assign(document.createElement("p"), { textContent: "Pose-toi les 3 questions du détective : qui a écrit ? comment le sait-il ? est-ce confirmé ailleurs ? Cette carte reviendra plus tard pour que tu puisses réessayer." }));
+  }
+  $("carte-suivante").textContent = pile.length === 0 ? "Voir mon résultat" : "Carte suivante";
+  $("zone-suivante").hidden = false;
+  fb.focus();
+}
+
+function terminer() {
+  const nb = Progression.etoiles(points, CARTES.length);
+  Progression.enregistrer(MISSION, CLE, { points, total: CARTES.length, etoiles: nb });
+  Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+  $("etoiles").innerHTML = [1, 2, 3].map((i) => '<span class="' + (i <= nb ? "pleine" : "vide") + '">★</span>').join("");
+  $("score-final").textContent = points + " cartes bien rangées du premier coup sur " + CARTES.length + " · " + nb + " étoile" + (nb > 1 ? "s" : "") + " sur 3";
+  $("message-final").textContent = nb === 3
+    ? "Excellent ! Tu sais déjà repérer les sources fiables. Noah peut avancer dans le labyrinthe."
+    : nb === 2
+      ? "Bien joué ! Relis le résumé ci-dessous pour bien distinguer les sources « à croiser » des sources « douteuses »."
+      : "Tu as rangé toutes les cartes, bravo pour ta persévérance ! Relis le résumé ci-dessous, puis rejoue si tu veux gagner plus d’étoiles.";
+  montrer("fin");
+  $("titre-fin").focus();
+  annoncer("Jeu terminé. " + $("score-final").textContent);
+}
+
+document.querySelectorAll(".boite").forEach((b) => b.addEventListener("click", () => choisir(b.dataset.boite)));
+$("carte-suivante").addEventListener("click", carteSuivante);
+$("commencer").addEventListener("click", demarrer);
+$("rejouer").addEventListener("click", demarrer);
+Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+</script>
+</body>
+</html>

@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeu 4 – Piège ton binôme · Mission 1 · Le Voyage de Noah</title>
+<link rel="stylesheet" href="../../commun/labyrinthe.css">
+<style>
+  .infos-partie { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--texte-doux); font-weight: 600; margin-bottom: 14px; }
+  .infos-partie strong { color: var(--texte); }
+  .role { display: inline-block; padding: 4px 14px; border-radius: 999px; border: 2px solid var(--violet); color: var(--violet); font-weight: 800; margin: 0 0 10px; }
+
+  /* Choix du sujet */
+  .sujets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  @media (max-width: 760px) { .sujets { grid-template-columns: 1fr; } }
+  .sujet {
+    font: inherit; color: var(--texte); text-align: left; cursor: pointer;
+    background: rgba(255,255,255,.05); border: 2px solid var(--cyan); border-radius: 14px; padding: 14px 16px;
+  }
+  .sujet:hover { background: rgba(142,202,230,.14); box-shadow: 0 0 14px rgba(142,202,230,.35); }
+  .sujet .titre { display: block; font-size: 19px; font-weight: 800; color: var(--cyan); }
+  .sujet .aide { font-size: 14px; color: var(--texte-doux); }
+
+  /* Fiche à piéger */
+  .fiche { background: linear-gradient(160deg, rgba(35,40,110,.95), rgba(18,20,59,.95)); border: 2px solid var(--violet); border-radius: 16px; padding: 18px 20px; }
+  .fiche .origine { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--violet); font-weight: 800; }
+  .fiche h3 { font-size: 21px; margin: 2px 0 12px; }
+  .ligne { border: 2px solid var(--bord); border-radius: 12px; padding: 10px 12px; margin: 0 0 10px; background: rgba(255,255,255,.04); }
+  .ligne.piegee { border-color: var(--rose); background: rgba(255,138,138,.08); }
+  .ligne .haut { display: flex; gap: 10px; align-items: flex-start; }
+  .ligne .num { font-weight: 800; color: var(--texte-doux); min-width: 22px; }
+  .ligne .vraie { margin: 0; flex: 1; }
+  .ligne label.case { display: inline-flex; gap: 8px; align-items: center; cursor: pointer; font-weight: 600; margin-top: 8px; }
+  .ligne input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--rose); }
+  .outils { margin-top: 10px; display: grid; gap: 8px; }
+  .outils label { font-weight: 600; font-size: 14px; }
+  .outils textarea, .outils select {
+    width: 100%; font: inherit; color: var(--texte); background: rgba(10,11,36,.7);
+    border: 2px solid var(--cyan); border-radius: 10px; padding: 8px 10px;
+  }
+  .outils textarea { min-height: 64px; resize: vertical; }
+  .astuce { font-size: 14px; color: var(--texte-doux); margin: 0; }
+
+  /* Fiche à démasquer */
+  .phrase {
+    width: 100%; text-align: left; font: inherit; color: var(--texte); cursor: pointer;
+    background: rgba(255,255,255,.05); border: 2px solid var(--bord); border-radius: 10px; padding: 9px 12px;
+  }
+  .phrase:hover { border-color: var(--cyan); }
+  .phrase[aria-pressed="true"] { border-color: var(--rose); background: rgba(255,138,138,.12); }
+  .soupcon { margin: 8px 0 0; }
+  .soupcon select { font: inherit; color: var(--texte); background: rgba(10,11,36,.7); border: 2px solid var(--cyan); border-radius: 10px; padding: 6px 8px; width: 100%; }
+  .phrases { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+
+  /* Écran de passage */
+  .passage { text-align: center; max-width: 640px; margin: 30px auto; }
+  .passage .grand { font-size: 26px; font-weight: 800; margin: 0 0 8px; }
+
+  .resultat-ligne { margin: 0 0 10px; }
+  .resultat-ligne .avant { color: var(--neon); }
+  .scores-joueurs { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin: 8px 0 0; }
+  .scores-joueurs span { border: 2px solid var(--bord); border-radius: 12px; padding: 8px 16px; font-weight: 800; }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <p class="fil">Le Voyage de Noah · Chapitre 3 · Mission 1 : La fiche piégée</p>
+  <nav class="couloir" id="couloir" aria-label="Progression dans la mission"></nav>
+</div>
+
+<main>
+  <p class="sr-only" id="annonce" aria-live="polite"></p>
+
+  <!-- ========== ACCUEIL ========== -->
+  <section id="accueil" aria-labelledby="titre-jeu">
+    <div class="banniere">
+      <img src="../../commun/labyrinthe.jpg" alt="">
+      <span class="credit">Image réalisée avec une intelligence artificielle</span>
+      <div class="texte">
+        <h1 id="titre-jeu" tabindex="-1">Jeu 4 : Piège ton binôme</h1>
+        <p class="objectif">Objectif : fabriquer des hallucinations pour mieux les reconnaître.</p>
+        <p class="duree">Durée : 10 min · À deux, sur le même ordinateur</p>
+      </div>
+    </div>
+
+    <div class="noah">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle"><strong>Noah :</strong> « Et si c’était toi, l’IA ? Glisse des illusions dans une fiche… et vois si ton binôme les démasque. Pour bien piéger, il faut connaître les pièges ! »</p>
+    </div>
+
+    <div class="consigne">
+      <h2>Consigne</h2>
+      <p><strong>Joueur 1</strong> choisit un sujet. Une fiche de 5 phrases vraies apparaît. Il en transforme <strong>2</strong> en hallucinations, en utilisant un signal d’alerte pour chacune. <strong>Joueur 2</strong> doit retrouver les 2 phrases piégées et dire quel signal a été utilisé. Ensuite, on inverse les rôles.</p>
+    </div>
+
+    <div class="memo">
+      <strong>Les 3 façons de piéger une fiche</strong>
+      <ol>
+        <li><strong>Mélanger le vrai et le faux</strong> : changer un seul détail (une date, un lieu, un nom).</li>
+        <li><strong>Inventer une source</strong> : ajouter « selon une étude… » ou une fausse citation.</li>
+        <li><strong>Donner un chiffre très précis sans preuve</strong> : remplacer un chiffre par un chiffre faux et très précis.</li>
+      </ol>
+      <p style="margin:8px 0 0">N’écris jamais ton nom ni d’informations personnelles dans le jeu. Rien n’est enregistré.</p>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn" id="commencer">Commencer (joueur 1)</button>
+    </div>
+  </section>
+
+  <!-- ========== CHOIX DU SUJET ========== -->
+  <section id="choix" aria-labelledby="titre-choix" hidden>
+    <p class="role" id="role-choix"></p>
+    <h2 id="titre-choix" tabindex="-1">Choisis le sujet de ta fiche</h2>
+    <p class="astuce" style="margin-bottom:12px" id="aide-choix">Ton binôme ne doit pas regarder l’écran !</p>
+    <div class="sujets" id="sujets"></div>
+  </section>
+
+  <!-- ========== PIÉGER ========== -->
+  <section id="pieger" aria-labelledby="titre-pieger" hidden>
+    <p class="role" id="role-pieger"></p>
+    <div class="infos-partie">
+      <span>Coche <strong>2 phrases</strong>, choisis un signal, puis réécris-les.</span>
+      <span>Phrases piégées : <strong id="nb-piegees">0</strong> / 2</span>
+    </div>
+    <div class="fiche">
+      <p class="origine">Fiche à piéger</p>
+      <h3 id="titre-pieger" tabindex="-1"></h3>
+      <div id="lignes"></div>
+    </div>
+    <div class="feedback" id="feedback-pieger" tabindex="-1"></div>
+    <div class="actions centre">
+      <button class="btn" id="valider-piege">Cacher ma fiche et passer à mon binôme</button>
+    </div>
+  </section>
+
+  <!-- ========== PASSAGE DE L’ORDINATEUR ========== -->
+  <section id="passage" class="passage" aria-labelledby="titre-passage" hidden>
+    <h2 id="titre-passage" tabindex="-1" class="grand"></h2>
+    <p id="texte-passage"></p>
+    <div class="actions centre">
+      <button class="btn" id="pret"></button>
+    </div>
+  </section>
+
+  <!-- ========== DÉMASQUER ========== -->
+  <section id="demasquer" aria-labelledby="titre-demasquer" hidden>
+    <p class="role" id="role-demasquer"></p>
+    <div class="infos-partie">
+      <span>Clique sur les <strong>2 phrases piégées</strong> et choisis le signal utilisé.</span>
+      <span>Phrases choisies : <strong id="nb-choisies">0</strong> / 2</span>
+    </div>
+    <div class="fiche">
+      <p class="origine">Fiche piégée par ton binôme</p>
+      <h3 id="titre-demasquer" tabindex="-1"></h3>
+      <ul class="phrases" id="phrases"></ul>
+    </div>
+    <div class="feedback" id="feedback-demasquer" tabindex="-1"></div>
+    <div class="actions centre" id="zone-valider">
+      <button class="btn" id="valider-enquete">Valider mon enquête</button>
+    </div>
+    <div class="actions centre" id="zone-apres" hidden>
+      <button class="btn" id="apres"></button>
+    </div>
+  </section>
+
+  <!-- ========== FIN DU JEU ========== -->
+  <section id="fin" class="fin" aria-labelledby="titre-fin" hidden>
+    <h2 id="titre-fin" tabindex="-1">Porte ouverte !</h2>
+    <p class="etoiles" id="etoiles" aria-hidden="true"></p>
+    <p class="score-grand" id="score-final"></p>
+    <div class="scores-joueurs" id="scores-joueurs"></div>
+    <p id="message-final"></p>
+
+    <div class="verre">
+      <h3>Ce que tu as appris</h3>
+      <p style="margin:0 0 8px">Pour piéger ton binôme, tu as fait comme une IA qui hallucine : tu as gardé une phrase <strong>presque vraie</strong> et tu as changé un détail, ajouté une fausse source ou un chiffre trop précis.</p>
+      <p style="margin:0">C’est pour ça que les hallucinations sont difficiles à voir : elles <strong>ressemblent</strong> à des informations vraies. Ta meilleure arme reste la méthode « Je vérifie » : je repère, je cherche, je croise.</p>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn secondaire" id="rejouer">Rejouer avec un autre sujet</button>
+      <a class="btn" href="../jeu5/">Jeu suivant : L’enquête Fortnite</a>
+    </div>
+  </section>
+</main>
+
+<script src="../../commun/progression.js"></script>
+<script>
+const MISSION = "mission1", CLE = "jeu4";
+
+const SIGNES = {
+  melange: "Mélanger le vrai et le faux (un détail changé)",
+  source: "Inventer une source (étude, citation)",
+  chiffre: "Donner un chiffre très précis sans preuve"
+};
+const ASTUCES = {
+  melange: "Change un seul détail : une date, un lieu, un nom… Le reste de la phrase reste vrai.",
+  source: "Ajoute une source qui n’existe pas : « Selon une étude de 2023… », « Comme l’a dit… »",
+  chiffre: "Remplace le chiffre par un chiffre faux et très précis, par exemple « 427,6 »."
+};
+
+const SUJETS = [
+  { titre: "Minecraft", aide: "Le jeu de blocs", phrases: [
+    "Minecraft est un jeu vidéo dans lequel le monde est fait de blocs.",
+    "Il a été créé par le studio suédois Mojang.",
+    "Sa version complète est sortie en 2011.",
+    "En 2014, Microsoft a racheté le studio Mojang.",
+    "On peut y jouer en mode Survie ou en mode Créatif."
+  ] },
+  { titre: "La tour Eiffel", aide: "Le monument de Paris", phrases: [
+    "La tour Eiffel se trouve à Paris.",
+    "Elle a été construite pour l’Exposition universelle de 1889.",
+    "Elle a été construite par l’entreprise de Gustave Eiffel.",
+    "Elle est faite de fer.",
+    "Elle mesure plus de 300 mètres de haut."
+  ] },
+  { titre: "Le système solaire", aide: "Les planètes", phrases: [
+    "Le système solaire compte 8 planètes.",
+    "Jupiter est la plus grande planète du système solaire.",
+    "La Terre est la troisième planète à partir du Soleil.",
+    "Mars est surnommée la « planète rouge ».",
+    "La Lune est le satellite naturel de la Terre."
+  ] }
+];
+
+const $ = (id) => document.getElementById(id);
+const ECRANS = ["accueil", "choix", "pieger", "passage", "demasquer", "fin"];
+function annoncer(t) { $("annonce").textContent = ""; setTimeout(() => { $("annonce").textContent = t; }, 50); }
+function montrer(id, titre) {
+  ECRANS.forEach((s) => { $(s).hidden = s !== id; });
+  window.scrollTo(0, 0);
+  if (titre) $(titre).focus();
+}
+function el(tag, cls, texte) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (texte) e.textContent = texte;
+  return e;
+}
+function nettoyer(t) { return t.trim().replace(/\s+/g, " "); }
+
+let tour, sujet, pieges, scores, sujetsUtilises;
+// pieges : { index: { signe, texte } } pour les 2 phrases piégées du tour en cours
+
+function demarrer() {
+  tour = 1;
+  scores = [0, 0];
+  sujetsUtilises = [];
+  allerChoix();
+}
+
+function piegeur() { return tour; }
+function enqueteur() { return tour === 1 ? 2 : 1; }
+
+function allerChoix() {
+  $("role-choix").textContent = "Joueur " + piegeur() + " : tu pièges la fiche";
+  $("aide-choix").textContent = "Joueur " + enqueteur() + ", ne regarde pas l’écran !";
+  const zone = $("sujets");
+  zone.innerHTML = "";
+  SUJETS.forEach((s, i) => {
+    const b = el("button", "sujet");
+    b.append(el("span", "titre", s.titre), el("span", "aide", s.aide + (sujetsUtilises.includes(i) ? " · déjà utilisé" : "")));
+    b.addEventListener("click", () => choisirSujet(i));
+    zone.append(b);
+  });
+  montrer("choix", "titre-choix");
+}
+
+function choisirSujet(i) {
+  sujet = SUJETS[i];
+  sujetsUtilises.push(i);
+  pieges = {};
+  $("role-pieger").textContent = "Joueur " + piegeur() + " : tu pièges la fiche";
+  $("titre-pieger").textContent = "Fiche : " + sujet.titre;
+  $("feedback-pieger").className = "feedback"; $("feedback-pieger").innerHTML = "";
+  dessinerLignes();
+  montrer("pieger", "titre-pieger");
+}
+
+function dessinerLignes() {
+  const zone = $("lignes");
+  zone.innerHTML = "";
+  sujet.phrases.forEach((p, i) => {
+    const piegee = i in pieges;
+    const ligne = el("div", "ligne" + (piegee ? " piegee" : ""));
+    const haut = el("div", "haut");
+    haut.append(el("span", "num", (i + 1) + "."), el("p", "vraie", p));
+    ligne.append(haut);
+
+    const lab = el("label", "case");
+    const cb = el("input");
+    cb.type = "checkbox";
+    cb.checked = piegee;
+    cb.disabled = !piegee && Object.keys(pieges).length >= 2;
+    lab.append(cb, el("span", null, piegee ? "Phrase piégée" : "Piéger cette phrase"));
+    cb.addEventListener("change", () => {
+      if (cb.checked) pieges[i] = { signe: "", texte: p };
+      else delete pieges[i];
+      dessinerLignes();
+      const nouvelle = $("lignes").querySelectorAll(".ligne")[i];
+      (nouvelle.querySelector("select") || nouvelle.querySelector("input")).focus();
+    });
+    ligne.append(lab);
+
+    if (piegee) {
+      const outils = el("div", "outils");
+      const idS = "signe-" + i, idT = "texte-" + i;
+      const labS = el("label", null, "Quel signal utilises-tu ?");
+      labS.htmlFor = idS;
+      const sel = el("select");
+      sel.id = idS;
+      sel.append(new Option("Choisis un signal…", ""));
+      Object.entries(SIGNES).forEach(([cle, t]) => sel.append(new Option(t, cle)));
+      sel.value = pieges[i].signe;
+      const astuce = el("p", "astuce", pieges[i].signe ? ASTUCES[pieges[i].signe] : "");
+      sel.addEventListener("change", () => { pieges[i].signe = sel.value; astuce.textContent = sel.value ? ASTUCES[sel.value] : ""; });
+      const labT = el("label", null, "Réécris la phrase pour la piéger :");
+      labT.htmlFor = idT;
+      const ta = el("textarea");
+      ta.id = idT;
+      ta.maxLength = 200;
+      ta.value = pieges[i].texte;
+      ta.addEventListener("input", () => { pieges[i].texte = ta.value; });
+      outils.append(labS, sel, astuce, labT, ta);
+      ligne.append(outils);
+    }
+    zone.append(ligne);
+  });
+  $("nb-piegees").textContent = Object.keys(pieges).length;
+}
+
+function validerPiege() {
+  const fb = $("feedback-pieger");
+  fb.innerHTML = "";
+  const erreurs = [];
+  const idx = Object.keys(pieges);
+  if (idx.length < 2) erreurs.push("Coche 2 phrases à piéger.");
+  idx.forEach((i) => {
+    const n = Number(i) + 1;
+    if (!pieges[i].signe) erreurs.push("Phrase " + n + " : choisis le signal que tu utilises.");
+    if (nettoyer(pieges[i].texte) === nettoyer(sujet.phrases[i])) erreurs.push("Phrase " + n + " : modifie la phrase pour la rendre fausse.");
+    else if (nettoyer(pieges[i].texte).length < 10) erreurs.push("Phrase " + n + " : ta phrase est trop courte pour piéger quelqu’un.");
+  });
+  if (erreurs.length) {
+    fb.className = "feedback faux";
+    const v = el("p");
+    v.append(el("span", "verdict", "Ta fiche n’est pas encore prête. "));
+    fb.append(v);
+    erreurs.forEach((e) => fb.append(el("p", null, e)));
+    fb.focus();
+    annoncer(fb.textContent);
+    return;
+  }
+  $("titre-passage").textContent = "Joueur " + enqueteur() + ", c’est à toi !";
+  $("texte-passage").textContent = "Joueur " + piegeur() + " a caché 2 illusions dans sa fiche « " + sujet.titre + " ». Prends l’ordinateur et mène l’enquête.";
+  $("pret").textContent = "Je suis le joueur " + enqueteur() + " : je commence l’enquête";
+  montrer("passage", "titre-passage");
+}
+
+let choisies; // { index: signe choisi }
+
+function allerDemasquer() {
+  choisies = {};
+  $("role-demasquer").textContent = "Joueur " + enqueteur() + " : tu enquêtes";
+  $("titre-demasquer").textContent = "Fiche : " + sujet.titre;
+  $("feedback-demasquer").className = "feedback"; $("feedback-demasquer").innerHTML = "";
+  $("zone-valider").hidden = false;
+  $("zone-apres").hidden = true;
+  dessinerEnquete(false);
+  montrer("demasquer", "titre-demasquer");
+}
+
+function texteFinal(i) { return i in pieges ? nettoyer(pieges[i].texte) : sujet.phrases[i]; }
+
+function dessinerEnquete(corrige) {
+  const ul = $("phrases");
+  ul.innerHTML = "";
+  sujet.phrases.forEach((_, i) => {
+    const li = el("li");
+    const choisie = i in choisies;
+    const b = el("button", "phrase", texteFinal(i));
+    b.setAttribute("aria-pressed", String(choisie));
+    b.disabled = corrige;
+    b.addEventListener("click", () => {
+      if (choisie) delete choisies[i];
+      else if (Object.keys(choisies).length < 2) choisies[i] = "";
+      else { annoncer("Tu as déjà choisi 2 phrases. Retire-en une d’abord."); return; }
+      dessinerEnquete(false);
+      $("phrases").querySelectorAll(".phrase")[i].focus();
+    });
+    li.append(b);
+    if (choisie && !corrige) {
+      const div = el("div", "soupcon");
+      const sel = el("select");
+      sel.setAttribute("aria-label", "Signal utilisé dans la phrase " + (i + 1));
+      sel.append(new Option("Quel signal a été utilisé ?", ""));
+      Object.entries(SIGNES).forEach(([cle, t]) => sel.append(new Option(t, cle)));
+      sel.value = choisies[i];
+      sel.addEventListener("change", () => { choisies[i] = sel.value; });
+      div.append(sel);
+      li.append(div);
+    }
+    ul.append(li);
+  });
+  $("nb-choisies").textContent = Object.keys(choisies).length;
+}
+
+function validerEnquete() {
+  const fb = $("feedback-demasquer");
+  fb.innerHTML = "";
+  const idx = Object.keys(choisies);
+  if (idx.length < 2 || idx.some((i) => !choisies[i])) {
+    fb.className = "feedback info";
+    fb.append(el("p", null, "Choisis 2 phrases et, pour chacune, le signal que tu soupçonnes."));
+    fb.focus();
+    annoncer(fb.textContent);
+    return;
+  }
+  let pts = 0;
+  const lignes = [];
+  Object.keys(pieges).forEach((i) => {
+    const trouvee = i in choisies;
+    const bonSigne = trouvee && choisies[i] === pieges[i].signe;
+    pts += (trouvee ? 1 : 0) + (bonSigne ? 1 : 0);
+    const p = el("p", "resultat-ligne");
+    p.append(el("strong", null, (trouvee ? "Démasquée : " : "Pas trouvée : ") + "« " + texteFinal(i) + " »"));
+    p.append(el("br"), "Signal utilisé : " + SIGNES[pieges[i].signe].toLowerCase()
+      + (trouvee ? (bonSigne ? " (bien vu !)" : " (tu avais choisi : " + SIGNES[choisies[i]].toLowerCase() + ")") : "") + ".");
+    p.append(el("br"), "La phrase vraie : ");
+    p.append(el("span", "avant", sujet.phrases[i]));
+    lignes.push(p);
+  });
+  scores[enqueteur() - 1] = pts;
+  fb.className = "feedback " + (pts >= 3 ? "bon" : "info");
+  const v = el("p");
+  v.append(el("span", "verdict", "Joueur " + enqueteur() + " : " + pts + " point" + (pts > 1 ? "s" : "") + " sur 4. "),
+    pts === 4 ? "Aucune illusion ne t’a échappé !" : pts >= 2 ? "Bonne enquête !" : "Ton binôme t’a bien piégé : les hallucinations ressemblent à des phrases vraies.");
+  fb.append(v, ...lignes);
+  dessinerEnquete(true);
+  $("zone-valider").hidden = true;
+  $("apres").textContent = tour === 1 ? "On inverse les rôles !" : "Voir le résultat";
+  $("zone-apres").hidden = false;
+  fb.focus();
+  annoncer(fb.textContent);
+}
+
+function apres() {
+  if (tour === 1) { tour = 2; allerChoix(); return; }
+  terminer();
+}
+
+function terminer() {
+  const points = scores[0] + scores[1], total = 8;
+  const nb = Progression.etoiles(points, total);
+  Progression.enregistrer(MISSION, CLE, { points, total, etoiles: nb });
+  Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+  $("etoiles").innerHTML = [1, 2, 3].map((i) => '<span class="' + (i <= nb ? "pleine" : "vide") + '">★</span>').join("");
+  $("score-final").textContent = "Score du binôme : " + points + " points sur " + total + " · " + nb + " étoile" + (nb > 1 ? "s" : "") + " sur 3";
+  const sj = $("scores-joueurs");
+  sj.innerHTML = "";
+  sj.append(el("span", null, "Joueur 1 : " + scores[0] + " / 4"), el("span", null, "Joueur 2 : " + scores[1] + " / 4"));
+  $("message-final").textContent = nb === 3
+    ? "Excellent ! Vous êtes de vrais détecteurs d’illusions."
+    : "Bien joué ! Vous avez vu à quel point une hallucination peut ressembler à une phrase vraie. Rejouez avec un autre sujet si vous voulez gagner plus d’étoiles.";
+  montrer("fin", "titre-fin");
+  annoncer("Jeu terminé. " + $("score-final").textContent);
+}
+
+$("commencer").addEventListener("click", demarrer);
+$("valider-piege").addEventListener("click", validerPiege);
+$("pret").addEventListener("click", allerDemasquer);
+$("valider-enquete").addEventListener("click", validerEnquete);
+$("apres").addEventListener("click", apres);
+$("rejouer").addEventListener("click", demarrer);
+Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+</script>
+</body>
+</html>

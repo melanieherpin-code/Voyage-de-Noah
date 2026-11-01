@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeu 3 – La fiche Pesquet · Mission 1 · Le Voyage de Noah</title>
+<link rel="stylesheet" href="../../commun/labyrinthe.css">
+<style>
+  .infos-partie { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--texte-doux); font-weight: 600; margin-bottom: 14px; }
+  .infos-partie strong { color: var(--texte); }
+  .jeu { display: grid; grid-template-columns: 1fr 1.1fr; gap: 18px; align-items: start; }
+  @media (max-width: 860px) { .jeu { grid-template-columns: 1fr; } }
+
+  /* Fiche écrite par l’IA */
+  .fiche { background: linear-gradient(160deg, rgba(35,40,110,.95), rgba(18,20,59,.95)); border: 2px solid var(--violet); border-radius: 16px; padding: 18px 20px; }
+  .fiche .origine { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--violet); font-weight: 800; }
+  .fiche h3 { font-size: 21px; margin: 2px 0 12px; }
+  .phrases { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .phrase {
+    width: 100%; text-align: left; font: inherit; color: var(--texte); cursor: pointer;
+    background: rgba(255,255,255,.05); border: 2px solid var(--bord); border-radius: 10px; padding: 9px 12px;
+  }
+  .phrase:hover { border-color: var(--cyan); }
+  .phrase[aria-pressed="true"] { border-color: var(--cyan); background: rgba(142,202,230,.16); box-shadow: 0 0 12px rgba(142,202,230,.35); }
+  .phrase.exacte { border-color: var(--neon); }
+  .phrase.inventee { border-color: var(--rose); }
+  .phrase.inventee .txt { text-decoration: line-through; text-decoration-thickness: 1px; }
+  .etiquette { display: block; font-size: 13px; font-weight: 800; margin-top: 2px; }
+  .exacte .etiquette { color: var(--neon); }
+  .inventee .etiquette { color: var(--rose); }
+
+  /* Panneau de vérification */
+  .etape-verif { border-top: 1px solid var(--bord); padding-top: 12px; margin-top: 12px; }
+  .etape-verif:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+  .etape-verif h3 { color: var(--cyan); }
+  .requete { display: inline-block; font-weight: 600; background: rgba(255,255,255,.08); border: 1px solid var(--bord); padding: 4px 10px; border-radius: 6px; }
+  .resultats { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 8px; }
+  .resultat { border: 1px solid var(--bord); border-radius: 10px; padding: 10px 12px; background: rgba(10,11,36,.55); }
+  .resultat .source { font-weight: 800; margin: 0; }
+  .resultat .type { font-size: 13px; margin: 0 0 4px; color: var(--neon); font-weight: 600; }
+  .resultat .extrait { margin: 0; }
+  .note { font-size: 13px; color: var(--texte-doux); margin: 10px 0 0; }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <p class="fil">Le Voyage de Noah · Chapitre 3 · Mission 1 : La fiche piégée</p>
+  <nav class="couloir" id="couloir" aria-label="Progression dans la mission"></nav>
+</div>
+
+<main>
+  <p class="sr-only" id="annonce" aria-live="polite"></p>
+
+  <!-- ========== ACCUEIL ========== -->
+  <section id="accueil" aria-labelledby="titre-jeu">
+    <div class="banniere">
+      <img src="../../commun/labyrinthe.jpg" alt="">
+      <span class="credit">Image réalisée avec une intelligence artificielle</span>
+      <div class="texte">
+        <h1 id="titre-jeu" tabindex="-1">Jeu 3 : La fiche Pesquet</h1>
+        <p class="objectif">Objectif : vérifier une information en croisant deux sources fiables.</p>
+        <p class="duree">Durée : 5 min</p>
+      </div>
+    </div>
+
+    <div class="noah">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle"><strong>Noah :</strong> « Pour ouvrir la porte suivante, je dois valider cette fiche sur l’astronaute Thomas Pesquet. Une IA l’a écrite en deux secondes… Vérifions-la ensemble, phrase par phrase. »</p>
+    </div>
+
+    <div class="consigne">
+      <h2>Consigne</h2>
+      <p>Clique sur chaque phrase de la fiche. Lis les deux sources trouvées par Noah, puis décide si l’information est <strong>exacte</strong> ou <strong>inventée</strong>. Vérifie les 7 phrases : <strong>3 d’entre elles sont inventées</strong>.</p>
+    </div>
+
+    <div class="memo">
+      <strong>La méthode « Je vérifie »</strong>
+      <ol>
+        <li>Je <strong>repère</strong> l’information à vérifier.</li>
+        <li>Je la <strong>cherche</strong> dans une source fiable.</li>
+        <li>Je <strong>croise</strong> : au moins deux sources fiables disent-elles la même chose ?</li>
+      </ol>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn" id="commencer">Ouvrir la fiche</button>
+    </div>
+  </section>
+
+  <!-- ========== PARTIE ========== -->
+  <section id="partie" aria-labelledby="titre-partie" hidden>
+    <h2 id="titre-partie" tabindex="-1" class="sr-only">Vérifier la fiche</h2>
+    <div class="infos-partie">
+      <span id="compteur">Phrases vérifiées : 0 / 7 · Inventées trouvées : 0 / 3</span>
+      <span>Points : <strong id="points">0</strong> / 7</span>
+    </div>
+
+    <div class="jeu">
+      <div class="fiche">
+        <p class="origine">Réponse générée par une IA</p>
+        <h3>Fiche : Thomas Pesquet</h3>
+        <ul class="phrases" id="fiche"></ul>
+      </div>
+
+      <div class="verre" id="panneau">
+        <p style="margin:0">Clique sur une phrase de la fiche pour lancer la vérification.</p>
+      </div>
+    </div>
+
+    <div class="actions centre" id="zone-fin" hidden>
+      <button class="btn" id="voir-resultat">Voir mon résultat</button>
+    </div>
+  </section>
+
+  <!-- ========== FIN DU JEU ========== -->
+  <section id="fin" class="fin" aria-labelledby="titre-fin" hidden>
+    <h2 id="titre-fin" tabindex="-1">Porte ouverte !</h2>
+    <p class="etoiles" id="etoiles" aria-hidden="true"></p>
+    <p class="score-grand" id="score-final"></p>
+    <p id="message-final"></p>
+
+    <div class="verre">
+      <h3>Ce que tu as appris</h3>
+      <ul>
+        <li>Une hallucination peut <strong>mélanger du vrai et du faux</strong> : l’année de naissance était juste (1978), mais pas la ville (Rouen, et non Paris).</li>
+        <li>L’IA peut <strong>exagérer</strong> : Thomas Pesquet n’est pas le premier Français dans l’espace (c’est Jean-Loup Chrétien, en 1982), il est le dixième.</li>
+        <li>L’IA peut <strong>associer des idées</strong> qui n’ont rien à voir : « astronaute » et « Mars ». Aucun humain n’est encore allé sur Mars.</li>
+        <li>Une information <strong>surprenante</strong> n’est pas forcément fausse : Thomas Pesquet a bien été le premier Français commandant de l’ISS.</li>
+      </ul>
+      <p style="margin:10px 0 0">Le bon réflexe : <strong>croiser au moins deux sources fiables</strong> avant de croire une information.</p>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn secondaire" id="rejouer">Rejouer</button>
+      <a class="btn" href="../jeu4/">Jeu suivant : Piège ton binôme</a>
+    </div>
+  </section>
+</main>
+
+<script src="../../commun/progression.js"></script>
+<script>
+const MISSION = "mission1", CLE = "jeu3";
+
+const SOURCES = {
+  esa: { source: "Agence spatiale européenne (esa.int)", type: "Organisme officiel" },
+  cnes: { source: "CNES – Centre national d’études spatiales (cnes.fr)", type: "Organisme officiel" },
+  encyclo: { source: "Encyclopédie en ligne", type: "Encyclopédie, sources citées" }
+};
+
+const FICHE = [
+  { texte: "Thomas Pesquet est un astronaute français de l’Agence spatiale européenne (ESA).", invente: false,
+    requete: "Thomas Pesquet astronaute ESA",
+    resultats: [["esa", "Thomas Pesquet est un astronaute de l’Agence spatiale européenne, sélectionné en 2009."],
+                ["cnes", "L’astronaute français Thomas Pesquet fait partie du corps des astronautes européens de l’ESA."]],
+    explication: "Les deux sources officielles le confirment : Thomas Pesquet est bien un astronaute français de l’ESA." },
+  { texte: "Il est né en 1978 à Paris.", invente: true,
+    requete: "Thomas Pesquet lieu de naissance",
+    resultats: [["esa", "Thomas Pesquet est né le 27 février 1978 à Rouen, en Normandie."],
+                ["encyclo", "Né à Rouen en 1978, Thomas Pesquet a fait des études d’ingénieur avant de devenir astronaute."]],
+    explication: "L’année est juste, mais la ville est fausse : Thomas Pesquet est né à Rouen. L’IA a mélangé un vrai fait (1978) et un faux (Paris). C’est typique d’une hallucination !" },
+  { texte: "Avant de devenir astronaute, il était ingénieur et pilote de ligne.", invente: false,
+    requete: "Thomas Pesquet métier avant astronaute",
+    resultats: [["encyclo", "Ingénieur de formation, Thomas Pesquet a ensuite été pilote de ligne avant d’être sélectionné comme astronaute."],
+                ["esa", "Avant de rejoindre l’ESA, Thomas Pesquet a travaillé comme ingénieur, puis comme pilote de ligne."]],
+    explication: "Les deux sources disent la même chose : l’information est exacte." },
+  { texte: "Il est le premier Français à être allé dans l’espace.", invente: true,
+    requete: "premier Français dans l’espace",
+    resultats: [["cnes", "Jean-Loup Chrétien est devenu le premier Français à aller dans l’espace, en 1982."],
+                ["encyclo", "Thomas Pesquet est le dixième astronaute français à être allé dans l’espace."]],
+    explication: "Faux : le premier Français dans l’espace est Jean-Loup Chrétien, en 1982. Thomas Pesquet est le dixième. L’IA a « exagéré » parce que Thomas Pesquet est très connu." },
+  { texte: "Il a effectué deux missions à bord de la Station spatiale internationale (ISS) : Proxima en 2016-2017 et Alpha en 2021.", invente: false,
+    requete: "Thomas Pesquet missions ISS",
+    resultats: [["esa", "Sa première mission, Proxima, a débuté en novembre 2016 et a duré environ six mois. Sa deuxième mission, Alpha, a débuté en avril 2021."],
+                ["cnes", "Pendant la mission Alpha, en 2021, Thomas Pesquet a vécu plusieurs mois à bord de l’ISS."]],
+    explication: "Les sources confirment les deux missions et leurs dates : l’information est exacte." },
+  { texte: "En 2021, il est devenu le premier Français commandant de l’ISS.", invente: false,
+    requete: "Thomas Pesquet commandant ISS",
+    resultats: [["esa", "Le 4 octobre 2021, Thomas Pesquet est devenu commandant de la Station spatiale internationale : une première pour un Français."],
+                ["cnes", "Thomas Pesquet a été le premier Français à commander la Station spatiale internationale, en 2021."]],
+    explication: "Exact ! Cette phrase semble incroyable, mais les deux sources la confirment. Une information surprenante n’est pas forcément fausse : on vérifie toujours." },
+  { texte: "Pendant la mission Alpha, il a marché sur Mars.", invente: true,
+    requete: "Thomas Pesquet Mars",
+    resultats: [["cnes", "Pendant la mission Alpha, Thomas Pesquet a vécu à bord de l’ISS, en orbite autour de la Terre, à environ 400 km d’altitude."],
+                ["encyclo", "Aucun être humain n’a encore posé le pied sur Mars. Pour l’instant, seuls des robots y ont été envoyés."]],
+    explication: "Faux : aucun humain n’est encore allé sur Mars. Thomas Pesquet est resté en orbite autour de la Terre, dans l’ISS. L’IA a inventé ce fait en associant « astronaute » et « Mars »." }
+];
+
+const $ = (id) => document.getElementById(id);
+function annoncer(t) { $("annonce").textContent = ""; setTimeout(() => { $("annonce").textContent = t; }, 50); }
+function montrer(id) {
+  ["accueil", "partie", "fin"].forEach((s) => { $(s).hidden = s !== id; });
+  window.scrollTo(0, 0);
+}
+function el(tag, cls, texte) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (texte) e.textContent = texte;
+  return e;
+}
+
+let etat, ratees, selection, points;
+
+function demarrer() {
+  etat = FICHE.map(() => null); // null | "exacte" | "inventee"
+  ratees = new Set();
+  selection = null;
+  points = 0;
+  $("panneau").innerHTML = '<p style="margin:0">Clique sur une phrase de la fiche pour lancer la vérification.</p>';
+  $("zone-fin").hidden = true;
+  dessinerFiche();
+  montrer("partie");
+  $("fiche").querySelector("button").focus();
+}
+
+function dessinerFiche() {
+  const ul = $("fiche");
+  ul.innerHTML = "";
+  FICHE.forEach((p, i) => {
+    const b = el("button", "phrase" + (etat[i] ? " " + etat[i] : ""));
+    b.setAttribute("aria-pressed", String(selection === i));
+    b.append(el("span", "txt", p.texte));
+    if (etat[i]) b.append(el("span", "etiquette", etat[i] === "exacte" ? "Vérifiée : exacte" : "Vérifiée : inventée"));
+    b.addEventListener("click", () => { selection = i; dessinerFiche(); verifier(i); });
+    const li = el("li");
+    li.append(b);
+    ul.append(li);
+  });
+  const verifiees = etat.filter(Boolean).length;
+  const trouvees = etat.filter((e) => e === "inventee").length;
+  $("compteur").textContent = "Phrases vérifiées : " + verifiees + " / 7 · Inventées trouvées : " + trouvees + " / 3";
+  $("points").textContent = points;
+  $("zone-fin").hidden = verifiees < FICHE.length;
+}
+
+function verifier(i) {
+  const p = FICHE[i];
+  const panneau = $("panneau");
+  panneau.innerHTML = "";
+
+  const e1 = el("div", "etape-verif");
+  e1.append(el("h3", null, "1. Je repère"), el("p", null, "« " + p.texte + " »"));
+
+  const e2 = el("div", "etape-verif");
+  const req = el("p");
+  req.append("Recherche de Noah : ", el("span", "requete", p.requete));
+  const liste = el("ul", "resultats");
+  p.resultats.forEach(([cle, extrait]) => {
+    const li = el("li", "resultat");
+    li.append(el("p", "source", SOURCES[cle].source), el("p", "type", SOURCES[cle].type), el("p", "extrait", extrait));
+    liste.append(li);
+  });
+  e2.append(el("h3", null, "2. Je cherche"), req, liste);
+
+  const e3 = el("div", "etape-verif");
+  e3.append(el("h3", null, "3. Je croise"), el("p", null, "Les deux sources disent-elles la même chose que la fiche ?"));
+  const fb = el("div", "feedback");
+  fb.tabIndex = -1;
+  if (etat[i]) {
+    fb.className = "feedback bon";
+    fb.append(el("p", null, p.explication));
+    e3.append(fb);
+  } else {
+    const actions = el("div", "actions");
+    const oui = el("button", "btn", "Elles confirment : c’est exact");
+    const non = el("button", "btn", "Elles contredisent : c’est inventé");
+    oui.addEventListener("click", () => repondre(false));
+    non.addEventListener("click", () => repondre(true));
+    actions.append(oui, non);
+    e3.append(actions, fb);
+  }
+  e3.append(el("p", "note", "Résultats simulés pour le jeu : les extraits sont reformulés à partir des sites de l’ESA et du CNES."));
+  panneau.append(e1, e2, e3);
+
+  function repondre(ditInventee) {
+    fb.innerHTML = "";
+    if (ditInventee === p.invente) {
+      etat[i] = p.invente ? "inventee" : "exacte";
+      if (!ratees.has(i)) points++;
+      fb.className = "feedback bon";
+      const v = el("p");
+      v.append(el("span", "verdict", p.invente ? "Hallucination démasquée !" : "Bien vérifié !"), ratees.has(i) ? "" : " +1 point");
+      fb.append(v, el("p", null, p.explication));
+      dessinerFiche();
+      const reste = FICHE.length - etat.filter(Boolean).length;
+      fb.append(el("p", null, reste > 0 ? "Choisis une autre phrase dans la fiche (encore " + reste + ")." : "Tu as vérifié toute la fiche ! Clique sur « Voir mon résultat »."));
+      e3.querySelector(".actions").remove();
+    } else {
+      ratees.add(i);
+      fb.className = "feedback faux";
+      const v = el("p");
+      v.append(el("span", "verdict", "Pas encore. "),
+        p.invente ? "Compare bien les détails (lieux, dates, noms) : les sources disent-elles exactement la même chose que la fiche ?"
+                  : "Relis les deux sources : elles disent la même chose que la fiche. Une information surprenante peut être exacte !");
+      fb.append(v);
+    }
+    fb.focus();
+    annoncer(fb.textContent);
+  }
+}
+
+function terminer() {
+  const nb = Progression.etoiles(points, FICHE.length);
+  Progression.enregistrer(MISSION, CLE, { points, total: FICHE.length, etoiles: nb });
+  Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+  $("etoiles").innerHTML = [1, 2, 3].map((i) => '<span class="' + (i <= nb ? "pleine" : "vide") + '">★</span>').join("");
+  $("score-final").textContent = points + " phrases bien vérifiées du premier coup sur " + FICHE.length + " · " + nb + " étoile" + (nb > 1 ? "s" : "") + " sur 3";
+  $("message-final").textContent = nb === 3
+    ? "Excellent ! Tu sais croiser les sources comme un vrai détective. Noah peut avancer dans le labyrinthe."
+    : nb === 2
+      ? "Bien joué ! Relis le résumé ci-dessous : compare toujours les détails (lieux, dates, noms) entre la fiche et les sources."
+      : "Tu as vérifié toute la fiche, bravo pour ta persévérance ! Relis le résumé ci-dessous, puis rejoue si tu veux gagner plus d’étoiles.";
+  montrer("fin");
+  $("titre-fin").focus();
+  annoncer("Jeu terminé. " + $("score-final").textContent);
+}
+
+$("commencer").addEventListener("click", demarrer);
+$("rejouer").addEventListener("click", demarrer);
+$("voir-resultat").addEventListener("click", terminer);
+Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+</script>
+</body>
+</html>
