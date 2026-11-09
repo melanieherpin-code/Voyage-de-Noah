@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vrai ou faux ? – Mission 2 · Le Voyage de Noah</title>
+<link rel="stylesheet" href="../../commun/labyrinthe.css">
+<style>
+  main { max-width: 760px; padding-top: 16px; }
+  .titre { text-align: center; margin: 0 0 14px; }
+  .titre h1 { font-size: 28px; }
+  .barre { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; color: var(--texte-doux); font-weight: 600; }
+  .progres { height: 6px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; margin: 0 0 14px; }
+  .progres span { display: block; height: 100%; background: var(--cyan); transition: width .3s; }
+
+  /* Zone de swipe */
+  .table { position: relative; display: flex; justify-content: center; align-items: center; min-height: 290px; touch-action: pan-y; }
+  .bord { position: absolute; top: 50%; transform: translateY(-50%); font-weight: 800; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; opacity: .55; }
+  .bord.g { left: 0; color: var(--rose); }
+  .bord.d { right: 0; color: var(--neon); }
+  .carte {
+    position: relative; width: min(100%, 460px); min-height: 250px; padding: 30px 26px; border-radius: 18px;
+    display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px; text-align: center;
+    background: rgba(18,20,59,.92); border: 2px solid var(--cyan); box-shadow: 0 0 20px rgba(142,202,230,.35);
+    cursor: grab; user-select: none; touch-action: pan-y; transition: transform .3s ease, border-color .2s;
+  }
+  .carte.glisse { transition: none; cursor: grabbing; }
+  .carte .num { font-size: 13px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--cyan); }
+  .carte .affirmation { font-size: 22px; font-weight: 800; line-height: 1.4; margin: 0; }
+  .tampon { position: absolute; top: 16px; padding: 4px 12px; border: 3px solid; border-radius: 8px; font-weight: 800; font-size: 20px; letter-spacing: .08em; opacity: 0; }
+  .tampon.vrai { right: 16px; color: var(--neon); border-color: var(--neon); transform: rotate(10deg); }
+  .tampon.faux { left: 16px; color: var(--rose); border-color: var(--rose); transform: rotate(-10deg); }
+  @media (max-width: 560px) { .bord { display: none; } .carte .affirmation { font-size: 20px; } }
+
+  .choix { display: flex; justify-content: center; gap: 14px; margin-top: 16px; flex-wrap: wrap; }
+  .btn.faux-btn { background: var(--rose); }
+  .btn.vrai-btn { background: var(--neon); }
+  .aide { text-align: center; color: var(--texte-doux); font-size: 14px; margin: 10px 0 0; }
+
+  .recap { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .recap li { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--bord); background: rgba(255,255,255,.04); }
+  .recap .rep { font-weight: 800; }
+  .recap .ok { color: var(--neon); }
+  .recap .ko { color: var(--rose); }
+  .fin { text-align: center; }
+  .fin .verre { text-align: left; margin-top: 16px; }
+
+  /* Écran de téléphone */
+  .telephone {
+    width: min(100%, 360px); margin: 0 auto; padding: 14px 12px 18px; border-radius: 38px;
+    background: #05061A; border: 3px solid #3A3F6B; box-shadow: 0 0 26px rgba(169,139,255,.35), inset 0 0 0 2px #1B1E45;
+  }
+  .encoche { width: 110px; height: 20px; margin: 0 auto 8px; border-radius: 0 0 14px 14px; background: #1B1E45; }
+  .ecran { border-radius: 26px; overflow: hidden; background: #F4F5FB; color: #1E2140; }
+  .appbar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #fff; border-bottom: 1px solid #E1E3EF; }
+  .appbar .rond { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--violet), var(--cyan)); flex: 0 0 34px; }
+  .appbar strong { display: block; font-size: 15px; }
+  .appbar .statut { font-size: 12px; color: #2E8B57; }
+  .fil-messages { height: 400px; overflow-y: auto; padding: 14px 12px; display: flex; flex-direction: column; gap: 8px; }
+  .sms { max-width: 82%; padding: 8px 12px; border-radius: 16px; font-size: 15px; line-height: 1.4; animation: apparition .25s ease-out; }
+  .sms.noah-msg { align-self: flex-end; background: #2F6FDB; color: #fff; border-bottom-right-radius: 4px; }
+  .sms.ia-msg { align-self: flex-start; background: #fff; border: 1px solid #DDE0EE; border-bottom-left-radius: 4px; }
+  .ecrit { align-self: flex-start; font-size: 13px; color: #5B6080; font-style: italic; }
+  .ecrit.droite { align-self: flex-end; }
+  .points span { display: inline-block; width: 6px; height: 6px; margin: 0 1px; border-radius: 50%; background: #8A8FB0; animation: rebond 1s infinite; }
+  .points span:nth-child(2) { animation-delay: .15s; }
+  .points span:nth-child(3) { animation-delay: .3s; }
+  @keyframes rebond { 0%, 60%, 100% { transform: none; } 30% { transform: translateY(-4px); } }
+  .vide-tel { margin: auto; text-align: center; color: #5B6080; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <p class="fil">Le Voyage de Noah · Chapitre 3 · Mission 2 : Le miroir des émotions</p>
+</div>
+
+<main>
+  <div class="titre">
+    <h1>Vrai ou faux ? Ce que tu crois de l’IA</h1>
+    <p class="objectif">Objectif : distinguer ce que ressent un être vivant de ce que calcule une machine.</p>
+    <p class="duree">Durée : 5 min</p>
+  </div>
+
+  <section id="intro" aria-labelledby="titre-intro">
+    <h2 id="titre-intro" class="sr-only">La conversation de Noah</h2>
+    <div class="noah">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle"><strong>Noah :</strong> « Hier soir, après ma dispute, j’ai écrit à une IA. Regarde notre conversation… »</p>
+    </div>
+
+    <div class="telephone">
+      <div class="encoche" aria-hidden="true"></div>
+      <div class="ecran">
+        <div class="appbar">
+          <span class="rond" aria-hidden="true"></span>
+          <span><strong>Assistant IA</strong><span class="statut">en ligne</span></span>
+        </div>
+        <div class="fil-messages" id="fil" role="log" aria-label="Conversation entre Noah et l’assistant IA">
+          <p class="vide-tel" id="vide-tel">Appuie sur « Lancer la conversation ».</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn" id="lancer" type="button">Lancer la conversation</button>
+      <button class="btn secondaire" id="passer" type="button">Afficher tout de suite</button>
+    </div>
+
+    <div id="apres-conv" hidden>
+      <div class="noah" style="margin-top:18px">
+        <div class="avatar" aria-hidden="true"></div>
+        <p class="bulle"><strong>Noah :</strong> « Elle avait l’air de vraiment me comprendre… Mais une IA peut-elle ressentir quelque chose ? Dis-moi ce que tu en penses ! »</p>
+      </div>
+      <div class="actions centre">
+        <button class="btn" id="vers-cartes" type="button">Commencer les cartes</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="jeu" aria-labelledby="compteur" hidden>
+    <div class="consigne">
+      <h2>Consigne</h2>
+      <p>Lis chaque phrase. Fais glisser la carte <strong>à droite si c’est vrai</strong>, <strong>à gauche si c’est faux</strong>. Tu peux aussi utiliser les boutons. Il n’y a pas de points : réponds ce que tu penses vraiment.</p>
+    </div>
+
+    <div class="barre"><span id="compteur" tabindex="-1"></span></div>
+    <div class="progres" aria-hidden="true"><span id="barre"></span></div>
+
+    <div class="table" id="table">
+      <span class="bord g" aria-hidden="true">← Faux</span>
+      <div class="carte" id="carte" aria-hidden="true">
+        <span class="tampon vrai">Vrai</span>
+        <span class="tampon faux">Faux</span>
+        <span class="num" id="num"></span>
+        <p class="affirmation" id="affirmation"></p>
+      </div>
+      <span class="bord d" aria-hidden="true">Vrai →</span>
+    </div>
+    <p class="sr-only" id="lecture"></p>
+
+    <div class="choix" id="choix">
+      <button class="btn faux-btn" type="button" data-rep="faux">← C’est faux</button>
+      <button class="btn vrai-btn" type="button" data-rep="vrai">C’est vrai →</button>
+    </div>
+    <p class="aide" id="aide">Au clavier : flèche gauche = faux, flèche droite = vrai.</p>
+
+    <div class="feedback" id="feedback" tabindex="-1"></div>
+    <div class="actions centre" id="zone-suivante" hidden>
+      <button class="btn" id="suivante" type="button">Carte suivante</button>
+    </div>
+  </section>
+
+  <section id="fin" class="fin" hidden>
+    <h2 id="titre-fin" tabindex="-1">Tu as répondu aux 15 cartes !</h2>
+    <p class="score-grand" id="score"></p>
+    <div class="noah" style="justify-content:center">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle" style="text-align:left" id="bulle-fin"></p>
+    </div>
+    <section class="verre" aria-labelledby="titre-recap">
+      <h3 id="titre-recap">Récapitulatif</h3>
+      <ul class="recap" id="recap"></ul>
+    </section>
+    <div class="consigne" style="margin-top:16px;text-align:left">
+      <h3>Et maintenant ?</h3>
+      <p>Retourne sur le site du Voyage de Noah pour la suite de l’apport, puis lance les mini-jeux de la mission 2.</p>
+    </div>
+    <div class="actions centre">
+      <button class="btn secondaire" id="rejouer" type="button">Recommencer</button>
+    </div>
+  </section>
+
+  <p class="sr-only" aria-live="polite" id="annonce"></p>
+</main>
+
+<script>
+  const CARTES = [
+    { t: "Quand une IA écrit « je suis triste pour toi », elle ressent de la tristesse.", vrai: false,
+      e: "Ressentir de la tristesse, c’est propre au vivant. L’IA est un système technique : elle reçoit ton message (entrée), calcule une réponse (traitement) et affiche « je suis triste pour toi » (sortie). Aucune émotion dans ces trois étapes." },
+    { t: "Une IA génère la suite de mots la plus probable.", vrai: true,
+      e: "C’est le traitement réalisé par ce système technique : à partir des mots reçus, il calcule le mot suivant le plus probable, encore et encore." },
+    { t: "Une IA peut devenir ton ami(e).", vrai: false,
+      e: "L’amitié est un lien entre deux êtres vivants qui ressentent quelque chose. L’IA est une machine : elle traite des messages, elle ne s’attache à personne." },
+    { t: "Une IA peut écrire des phrases qui ont l’air pleines d’émotion.", vrai: true,
+      e: "Le système a été entraîné sur d’énormes quantités de textes écrits par des humains. Sa réponse imite le style de ces textes, émotions comprises : c’est une imitation, pas un ressenti." },
+    { t: "Une IA comprend ce que tu ressens.", vrai: false,
+      e: "En entrée, l’IA reçoit des mots (« triste », « dispute »). Elle les traite comme des données pour produire une réponse adaptée. Comprendre ce que tu vis, c’est propre au vivant." },
+    { t: "Une IA se souvient de toi comme un ami le ferait.", vrai: false,
+      e: "Une machine peut stocker tes messages comme des données et les réutiliser. Un ami, lui, se souvient de ce que vous avez vécu ensemble : ce n’est pas la même chose." },
+    { t: "On a tendance à parler aux machines comme à des humains.", vrai: true,
+      e: "C’est l’anthropomorphisme : on prête des émotions et des intentions humaines aux objets et aux machines. Cette mission t’aide à distinguer le vivant de la machine." },
+    { t: "Une IA décide de t’aider parce qu’elle t’apprécie.", vrai: false,
+      e: "Apprécier quelqu’un, c’est propre au vivant. L’IA répond parce qu’elle est programmée pour traiter chaque message reçu : le tien comme celui de n’importe qui." },
+    { t: "Une IA a des envies : elle « veut » quelque chose.", vrai: false,
+      e: "Avoir des envies, c’est propre au vivant. Une machine ne fait rien d’elle-même : sans message en entrée, il n’y a ni traitement ni réponse." },
+    { t: "Un assistant vocal qui répond poliment est content de t’aider.", vrai: false,
+      e: "La politesse de la réponse a été prévue par les personnes qui ont conçu le système. La machine traite ta demande et produit une réponse polie, sans rien ressentir." },
+    { t: "Derrière une réponse « gentille » de l’IA, il y a des calculs.", vrai: true,
+      e: "Le traitement réalisé par l’IA est un calcul : chaque mot de la réponse est choisi selon des probabilités. La gentillesse est dans le style du texte, pas dans un sentiment." },
+    { t: "Si une IA écrit « je t’aime », elle le pense vraiment.", vrai: false,
+      e: "« Je t’aime » est une suite de mots fréquente dans les textes humains. La machine peut la produire en sortie, mais aimer, c’est propre au vivant." },
+    { t: "Une IA exécute des instructions : elle ne décide pas seule.", vrai: true,
+      e: "Comme tout système technique, l’IA suit son programme et traite les informations qu’on lui donne. Une IA ne décide pas, elle exécute." },
+    { t: "Quand on est triste, une IA peut remplacer un ami ou un adulte de confiance.", vrai: false,
+      e: "L’IA peut t’aider à mettre des mots sur ce que tu ressens, mais une machine n’écoute pas comme un être vivant. Parle à quelqu’un qui t’écoute vraiment : un ami, un parent, un adulte du collège." },
+    { t: "Dire « merci » à une IA ou lui donner un prénom, c’est une façon de l’humaniser.", vrai: true,
+      e: "Ce n’est pas grave d’être poli ! Mais c’est le signe que notre cerveau traite la machine comme un être vivant : il vaut mieux s’en rendre compte." },
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const SEUIL = 90;
+  let pos, reponses, repondu;
+
+  function annoncer(t) { $("annonce").textContent = ""; setTimeout(() => { $("annonce").textContent = t; }, 50); }
+  function el(tag, cls, texte) { const e = document.createElement(tag); if (cls) e.className = cls; if (texte) e.textContent = texte; return e; }
+
+  /* ---------- Conversation sur le téléphone ---------- */
+  const CONVERSATION = [
+    { qui: "noah", t: "Salut… Je me suis disputé avec mon meilleur ami. Il ne me parle plus." },
+    { qui: "ia", t: "Oh, je suis triste pour toi. Je comprends ce que tu ressens : ça doit être vraiment dur." },
+    { qui: "noah", t: "Ouais… J’ai l’impression que personne ne me comprend." },
+    { qui: "ia", t: "Moi, je te comprends. Tu peux me parler quand tu veux, je serai toujours là pour toi." },
+    { qui: "noah", t: "Merci… T’es un peu mon amie, en fait ?" },
+    { qui: "ia", t: "Bien sûr ! Je tiens à toi et je suis là pour t’écouter." },
+  ];
+  const reduit = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let convLancee = false, convFinie = false, minuteries = [];
+
+  function bulleSms(m) {
+    const p = el("p", "sms " + (m.qui === "noah" ? "noah-msg" : "ia-msg"));
+    p.append(el("span", "sr-only", m.qui === "noah" ? "Noah : " : "Assistant IA : "), m.t);
+    return p;
+  }
+
+  function finConversation() {
+    convFinie = true;
+    $("lancer").hidden = true; $("passer").hidden = true;
+    $("apres-conv").hidden = false;
+    $("vers-cartes").focus();
+  }
+
+  function toutAfficher() {
+    minuteries.forEach(clearTimeout); minuteries = [];
+    const fil = $("fil"); fil.innerHTML = "";
+    CONVERSATION.forEach((m) => fil.append(bulleSms(m)));
+    fil.scrollTop = fil.scrollHeight;
+    finConversation();
+  }
+
+  function lancerConversation() {
+    if (convLancee) return;
+    convLancee = true;
+    if (reduit) return toutAfficher();
+    $("lancer").disabled = true;
+    const fil = $("fil"); fil.innerHTML = "";
+    let t = 300;
+    CONVERSATION.forEach((m, i) => {
+      const frappe = Math.min(700 + m.t.length * 28, 2800);
+      minuteries.push(setTimeout(() => {
+        const ecrit = el("p", "ecrit" + (m.qui === "noah" ? " droite" : ""));
+        ecrit.setAttribute("aria-hidden", "true");
+        ecrit.append((m.qui === "noah" ? "Noah" : "L’IA") + " écrit ");
+        const pts = el("span", "points"); pts.append(el("span"), el("span"), el("span"));
+        ecrit.append(pts);
+        ecrit.id = "en-train";
+        fil.append(ecrit); fil.scrollTop = fil.scrollHeight;
+      }, t));
+      t += frappe;
+      minuteries.push(setTimeout(() => {
+        const e = $("en-train"); if (e) e.remove();
+        fil.append(bulleSms(m)); fil.scrollTop = fil.scrollHeight;
+        if (i === CONVERSATION.length - 1) finConversation();
+      }, t));
+      t += 900;
+    });
+  }
+
+  $("lancer").addEventListener("click", lancerConversation);
+  $("passer").addEventListener("click", toutAfficher);
+  $("vers-cartes").addEventListener("click", () => { demarrer(); $("compteur").focus(); });
+
+  function demarrer() {
+    pos = 0; reponses = [];
+    $("intro").hidden = true; $("fin").hidden = true; $("jeu").hidden = false;
+    afficher();
+  }
+
+  function placer(dx) {
+    const c = $("carte");
+    c.style.transform = dx ? "translateX(" + dx + "px) rotate(" + (dx / 18) + "deg)" : "";
+    const force = Math.min(Math.abs(dx) / SEUIL, 1);
+    c.querySelector(".tampon.vrai").style.opacity = dx > 0 ? force : 0;
+    c.querySelector(".tampon.faux").style.opacity = dx < 0 ? force : 0;
+  }
+
+  function afficher() {
+    repondu = false;
+    const c = CARTES[pos];
+    placer(0);
+    $("carte").style.borderColor = "";
+    $("num").textContent = "Carte " + (pos + 1);
+    $("affirmation").textContent = c.t;
+    $("compteur").textContent = "Carte " + (pos + 1) + " sur " + CARTES.length;
+    $("barre").style.width = (pos / CARTES.length * 100) + "%";
+    $("feedback").className = "feedback"; $("feedback").innerHTML = "";
+    $("zone-suivante").hidden = true;
+    $("choix").hidden = false; $("aide").hidden = false;
+    $("choix").querySelectorAll("button").forEach((b) => { b.disabled = false; });
+    $("lecture").textContent = "Carte " + (pos + 1) + " sur " + CARTES.length + " : " + c.t;
+    annoncer($("lecture").textContent);
+  }
+
+  function repondre(rep) {
+    if (repondu) return;
+    repondu = true;
+    const c = CARTES[pos];
+    const juste = (rep === "vrai") === c.vrai;
+    reponses.push({ rep, juste });
+    placer(rep === "vrai" ? 140 : -140);
+    $("carte").style.borderColor = rep === "vrai" ? "var(--neon)" : "var(--rose)";
+    $("choix").querySelectorAll("button").forEach((b) => { b.disabled = true; });
+    $("choix").hidden = true; $("aide").hidden = true;
+    const fb = $("feedback");
+    fb.className = "feedback " + (juste ? "bon" : "info");
+    const v = el("p");
+    v.append(el("span", "verdict", (juste ? "Bien vu ! " : "Pas tout à fait. ") + "C’est " + (c.vrai ? "vrai" : "faux") + "."));
+    fb.append(v, el("p", null, c.e));
+    $("suivante").textContent = pos === CARTES.length - 1 ? "Voir le récapitulatif" : "Carte suivante";
+    $("zone-suivante").hidden = false;
+    setTimeout(() => placer(0), 350);
+    fb.focus();
+    annoncer(fb.textContent);
+  }
+
+  function suivante() {
+    if (pos < CARTES.length - 1) { pos++; afficher(); $("compteur").focus(); return; }
+    terminer();
+  }
+
+  function terminer() {
+    const justes = reponses.filter((r) => r.juste).length;
+    $("barre").style.width = "100%";
+    $("score").textContent = "Tes intuitions étaient justes pour " + justes + " carte" + (justes > 1 ? "s" : "") + " sur " + CARTES.length + ".";
+    $("bulle-fin").innerHTML = "";
+    $("bulle-fin").append(el("strong", null, "Noah : "),
+      justes >= 12 ? "« Tu ne te laisses pas avoir par les belles phrases de l’IA ! Voyons maintenant comment elle fabrique ces “émotions”. »"
+                   : "« Moi aussi, j’ai cru que l’IA me comprenait ! C’est normal : on a tous tendance à humaniser les machines. La suite va nous aider à y voir plus clair. »");
+    const ul = $("recap"); ul.innerHTML = "";
+    CARTES.forEach((c, i) => {
+      const r = reponses[i];
+      const li = el("li");
+      li.append(el("span", "rep " + (r.juste ? "ok" : "ko"), (c.vrai ? "Vrai" : "Faux") + " · "), c.t);
+      if (!r.juste) li.append(el("span", null, " (tu avais répondu : " + r.rep + ")"));
+      ul.append(li);
+    });
+    $("jeu").hidden = true; $("fin").hidden = false;
+    $("titre-fin").focus();
+    annoncer("Terminé. " + $("score").textContent);
+  }
+
+  // Glisser à la souris, au doigt ou au stylet
+  (function () {
+    const carte = $("carte");
+    let depart = null, dx = 0;
+    carte.addEventListener("pointerdown", (e) => {
+      if (repondu) return;
+      depart = e.clientX; dx = 0;
+      carte.setPointerCapture(e.pointerId);
+      carte.classList.add("glisse");
+    });
+    carte.addEventListener("pointermove", (e) => {
+      if (depart === null) return;
+      dx = e.clientX - depart;
+      placer(dx);
+    });
+    const lacher = () => {
+      if (depart === null) return;
+      depart = null;
+      carte.classList.remove("glisse");
+      if (dx > SEUIL) repondre("vrai");
+      else if (dx < -SEUIL) repondre("faux");
+      else placer(0);
+    };
+    carte.addEventListener("pointerup", lacher);
+    carte.addEventListener("pointercancel", lacher);
+  })();
+
+  $("choix").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => repondre(b.dataset.rep)));
+  $("suivante").addEventListener("click", suivante);
+  $("rejouer").addEventListener("click", () => { demarrer(); $("compteur").focus(); });
+  document.addEventListener("keydown", (e) => {
+    if ($("jeu").hidden || repondu) return;
+    if (e.target.closest && e.target.closest("button")) {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    }
+    if (e.key === "ArrowRight") { e.preventDefault(); repondre("vrai"); }
+    if (e.key === "ArrowLeft") { e.preventDefault(); repondre("faux"); }
+  });
+
+</script>
+</body>
+</html>
