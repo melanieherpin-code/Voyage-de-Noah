@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flashcards – Mission 1 · Le Voyage de Noah</title>
+<link rel="stylesheet" href="../../commun/labyrinthe.css">
+<style>
+  main { max-width: 760px; padding-top: 16px; }
+  .titre { text-align: center; margin: 0 0 14px; }
+  .titre h1 { font-size: 28px; }
+  .barre { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; color: var(--texte-doux); font-weight: 600; }
+  .barre strong { color: var(--texte); }
+  .progres { height: 6px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; margin: 0 0 14px; }
+  .progres span { display: block; height: 100%; background: var(--cyan); transition: width .3s; }
+
+  /* Carte à retourner */
+  .scene { perspective: 1200px; }
+  .carte {
+    position: relative; display: block; width: 100%; min-height: 300px; padding: 0; border: 0; background: none;
+    font: inherit; color: inherit; cursor: pointer; text-align: center;
+    transform-style: preserve-3d; transition: transform .5s ease;
+  }
+  .carte.retournee { transform: rotateY(180deg); }
+  .face {
+    position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px;
+    padding: 28px 28px 44px; border-radius: 16px; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  }
+  .recto { background: rgba(18,20,59,.85); border: 2px solid var(--cyan); box-shadow: 0 0 18px rgba(142,202,230,.35); }
+  .verso { background: rgba(18,20,59,.92); border: 2px solid var(--neon); box-shadow: 0 0 18px rgba(91,227,166,.35); transform: rotateY(180deg); }
+  .theme { font-size: 13px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+  .recto .theme { color: var(--cyan); }
+  .verso .theme { color: var(--neon); }
+  .texte-q { font-size: 21px; font-weight: 800; line-height: 1.4; margin: 0; }
+  .texte-r { font-size: 18px; line-height: 1.5; margin: 0; }
+  .indice { position: absolute; bottom: 12px; left: 0; right: 0; font-size: 13px; color: var(--texte-doux); }
+  .carte:hover .recto { box-shadow: 0 0 26px rgba(142,202,230,.6); }
+  .carte:focus-visible { outline: none; }
+  .carte:focus-visible .face { outline: 3px solid var(--focus); outline-offset: 3px; }
+  @media (max-width: 560px) { .carte { min-height: 340px; } .texte-q { font-size: 19px; } .texte-r { font-size: 17px; } }
+
+  /* Mouvement réduit : pas de rotation, on change simplement de face */
+  @media (prefers-reduced-motion: reduce) {
+    .carte.retournee { transform: none; }
+    .verso { transform: none; }
+    .carte .verso { visibility: hidden; }
+    .carte.retournee .recto { visibility: hidden; }
+    .carte.retournee .verso { visibility: visible; }
+  }
+
+  .nav { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  .fin { text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <p class="fil">Le Voyage de Noah · Chapitre 3 · Mission 1 : La fiche piégée</p>
+</div>
+
+<main>
+  <div class="titre">
+    <h1>Les flashcards de la mission 1</h1>
+    <p class="objectif">Objectif : retenir l’essentiel sur les hallucinations et la méthode « Je vérifie ».</p>
+    <p class="duree">Durée : 7 min</p>
+  </div>
+
+  <div class="noah">
+    <div class="avatar" aria-hidden="true"></div>
+    <p class="bulle"><strong>Noah :</strong> « Avant de quitter cette partie du labyrinthe, testons ta mémoire ! Lis la question, cherche la réponse dans ta tête… puis retourne la carte. »</p>
+  </div>
+
+  <section id="jeu" aria-labelledby="compteur">
+    <div class="barre">
+      <span id="compteur" tabindex="-1"></span>
+      <button class="btn secondaire" id="melanger" type="button">Mélanger les cartes</button>
+    </div>
+    <div class="progres" aria-hidden="true"><span id="barre"></span></div>
+
+    <div class="scene">
+      <button class="carte" id="carte" type="button" aria-describedby="aide-carte">
+        <span class="face recto" id="recto">
+          <span class="theme" id="theme-q"></span>
+          <span class="texte-q" id="question"></span>
+          <span class="indice">Clique ou appuie sur Entrée pour voir la réponse</span>
+        </span>
+        <span class="face verso" id="verso">
+          <span class="theme" id="theme-r"></span>
+          <span class="texte-r" id="reponse"></span>
+          <span class="indice">Clique ou appuie sur Entrée pour revoir la question</span>
+        </span>
+      </button>
+    </div>
+    <p class="sr-only" id="aide-carte">Bouton : retourne la carte pour afficher la réponse ou la question.</p>
+
+    <div class="nav">
+      <button class="btn secondaire" id="precedente" type="button">Carte précédente</button>
+      <button class="btn" id="suivante" type="button">Carte suivante</button>
+    </div>
+  </section>
+
+  <section id="fin" class="fin" hidden>
+    <h2 id="titre-fin" tabindex="-1">Tu as vu les 20 cartes !</h2>
+    <div class="noah" style="justify-content:center">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle" style="text-align:left"><strong>Noah :</strong> « Bravo ! Si certaines réponses t’ont échappé, mélange les cartes et refais un tour. »</p>
+    </div>
+    <div class="actions centre">
+      <button class="btn" id="recommencer" type="button">Refaire un tour (cartes mélangées)</button>
+      <button class="btn secondaire" id="revoir" type="button">Revoir dans l’ordre</button>
+    </div>
+  </section>
+
+  <p class="sr-only" aria-live="polite" id="annonce"></p>
+</main>
+
+<script>
+  const CARTES = [
+    {
+      "theme": "Hallucination",
+      "q": "Qu’est-ce qu’une hallucination d’IA ?",
+      "r": "Une réponse inventée par l’IA qui a l’air vraie et qu’elle donne avec beaucoup d’assurance."
+    },
+    {
+      "theme": "Hallucination",
+      "q": "Pourquoi une IA peut-elle inventer une réponse ?",
+      "r": "Une IA ne « sait » pas : elle fabrique la réponse la plus probable. Quand elle ne trouve pas, elle peut inventer, toujours avec le même ton sûr d’elle."
+    },
+    {
+      "theme": "Signaux d’alerte",
+      "q": "Quels sont les 4 signaux d’alerte d’une hallucination ?",
+      "r": "1. L’IA accepte une idée fausse cachée dans la question. 2. Elle invente une source (citation, livre, étude). 3. Elle mélange du vrai et du faux. 4. Elle donne un chiffre très précis sans preuve."
+    },
+    {
+      "theme": "Signaux d’alerte",
+      "q": "Tu demandes : « Pourquoi Napoléon a-t-il inventé le téléphone ? » L’IA te raconte toute une histoire. Quel signal d’alerte ?",
+      "r": "Elle accepte une idée fausse cachée dans la question au lieu de la corriger. Napoléon n’a pas inventé le téléphone : le brevet a été déposé par Alexander Graham Bell en 1876."
+    },
+    {
+      "theme": "Signaux d’alerte",
+      "q": "Une IA te donne une citation de Victor Hugo sur l’intelligence artificielle. Quel signal d’alerte ?",
+      "r": "Elle invente une source. Victor Hugo est mort en 1885, bien avant les ordinateurs : il n’a jamais écrit sur l’IA."
+    },
+    {
+      "theme": "Signaux d’alerte",
+      "q": "Une IA te conseille un livre pour ton exposé. Que fais-tu avant de le chercher ?",
+      "r": "Je vérifie qu’il existe dans le catalogue du CDI ou d’une bibliothèque : les IA fabriquent souvent un titre et un nom d’auteur qui ont l’air réels."
+    },
+    {
+      "theme": "Signaux d’alerte",
+      "q": "« Marie Curie a reçu deux prix Nobel… et a inventé l’ampoule électrique. » Quel signal d’alerte ?",
+      "r": "Le mélange du vrai et du faux : l’IA glisse une erreur au milieu de vraies informations. C’est ce qui rend ce piège difficile à voir."
+    },
+    {
+      "theme": "Signaux d’alerte",
+      "q": "« Exactement 73,4 % des collégiens utilisent une IA chaque jour. » Pourquoi se méfier ?",
+      "r": "C’est un chiffre très précis sans preuve : aucune enquête n’est citée. Un chiffre sans source, on ne le reprend pas : on cherche d’abord qui l’a mesuré."
+    },
+    {
+      "theme": "Signaux d’alerte",
+      "q": "« Selon une étude… » sans nom ni lien : est-ce une preuve ?",
+      "r": "Non. « Une étude » qu’on ne peut pas retrouver, c’est un signal d’alerte : la source est peut-être inventée."
+    },
+    {
+      "theme": "Vérifier",
+      "q": "L’IA t’a donné une réponse juste. Comment peux-tu le savoir ?",
+      "r": "Seulement en vérifiant dans une source fiable (un atlas, un manuel, un site officiel). Une IA ne se trompe pas tout le temps, mais le bon réflexe reste de vérifier."
+    },
+    {
+      "theme": "Méthode « Je vérifie »",
+      "q": "Quelles sont les 3 étapes de la méthode « Je vérifie » ?",
+      "r": "1. Je repère l’information à vérifier. 2. Je la cherche dans une source fiable. 3. Je croise : au moins deux sources fiables disent-elles la même chose ?"
+    },
+    {
+      "theme": "Méthode « Je vérifie »",
+      "q": "Que veut dire « croiser les sources » ?",
+      "r": "Vérifier qu’au moins deux sources fiables disent la même chose, en comparant bien les détails : lieux, dates, noms."
+    },
+    {
+      "theme": "Sources",
+      "q": "Quelles sont les 3 questions du détective ?",
+      "r": "Qui a écrit ? (l’auteur est-il connu et compétent ?) Comment le sait-il ? (cite-t-il ses sources, ses preuves ?) Est-ce confirmé ailleurs par d’autres sources fiables ?"
+    },
+    {
+      "theme": "Sources",
+      "q": "Donne 3 exemples de sources fiables.",
+      "r": "Un organisme officiel, un journal avec un auteur identifié, un manuel scolaire."
+    },
+    {
+      "theme": "Sources",
+      "q": "Donne 3 exemples de sources « à croiser ».",
+      "r": "Une encyclopédie collaborative, une vidéo de vulgarisation, une réponse d’IA. Elles peuvent être utiles, mais on vérifie toujours avec une source fiable."
+    },
+    {
+      "theme": "Sources",
+      "q": "La réponse d’une IA : source fiable, à croiser ou douteuse ?",
+      "r": "À croiser. Même quand elle est juste, tu ne peux pas le savoir sans vérifier : l’IA donne une réponse probable, pas forcément vraie."
+    },
+    {
+      "theme": "Sources",
+      "q": "Quels signes montrent qu’une source est douteuse ?",
+      "r": "Un auteur inconnu, aucune preuve, un message qui pousse à partager vite."
+    },
+    {
+      "theme": "Sources",
+      "q": "Un message dit : « Partagez vite avant que ce soit supprimé !!! » Pourquoi se méfier ?",
+      "r": "L’urgence sert à t’empêcher de réfléchir avant de partager. En plus, personne ne sait qui l’a écrit au départ."
+    },
+    {
+      "theme": "Vérifier",
+      "q": "Une information surprenante est-elle forcément fausse ?",
+      "r": "Non. Exemple : Thomas Pesquet a bien été le premier Français commandant de la Station spatiale internationale, en 2021. On vérifie toujours avant de juger."
+    },
+    {
+      "theme": "Vérifier",
+      "q": "Un blog anonyme confirme ce que dit l’IA. Est-ce suffisant ? Et où vérifier l’âge conseillé d’un jeu ?",
+      "r": "Non : une seule source douteuse ne suffit jamais, elle peut répéter la même erreur. Pour l’âge d’un jeu, on va voir l’organisme qui le classe : PEGI (Fortnite est classé PEGI 12)."
+    }
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  let ordre = CARTES.map((_, i) => i);
+  let pos = 0;
+
+  function annoncer(t) { $("annonce").textContent = ""; setTimeout(() => { $("annonce").textContent = t; }, 50); }
+
+  function melanger() {
+    ordre = CARTES.map((_, i) => i);
+    for (let i = ordre.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [ordre[i], ordre[j]] = [ordre[j], ordre[i]];
+    }
+  }
+
+  function afficher() {
+    const c = CARTES[ordre[pos]];
+    const carte = $("carte");
+    carte.classList.remove("retournee");
+    $("theme-q").textContent = c.theme;
+    $("theme-r").textContent = c.theme;
+    $("question").textContent = c.q;
+    $("reponse").textContent = c.r;
+    $("compteur").textContent = "Carte " + (pos + 1) + " sur " + CARTES.length;
+    $("barre").style.width = ((pos + 1) / CARTES.length * 100) + "%";
+    $("precedente").disabled = pos === 0;
+    $("suivante").textContent = pos === CARTES.length - 1 ? "Terminer" : "Carte suivante";
+    carte.setAttribute("aria-label", "Question : " + c.q);
+  }
+
+  function retourner() {
+    const carte = $("carte");
+    const c = CARTES[ordre[pos]];
+    const versVerso = !carte.classList.contains("retournee");
+    carte.classList.toggle("retournee", versVerso);
+    carte.setAttribute("aria-label", versVerso ? "Réponse : " + c.r : "Question : " + c.q);
+    annoncer(versVerso ? "Réponse : " + c.r : "Question : " + c.q);
+  }
+
+  function aller(n) {
+    pos = n;
+    afficher();
+    annoncer("Carte " + (pos + 1) + " sur " + CARTES.length + ". Question : " + CARTES[ordre[pos]].q);
+  }
+
+  function demarrer(enMelangeant) {
+    if (enMelangeant) melanger(); else ordre = CARTES.map((_, i) => i);
+    $("fin").hidden = true;
+    $("jeu").hidden = false;
+    aller(0);
+    $("carte").focus();
+  }
+
+  $("carte").addEventListener("click", retourner);
+  $("precedente").addEventListener("click", () => { if (pos > 0) aller(pos - 1); });
+  $("suivante").addEventListener("click", () => {
+    if (pos < CARTES.length - 1) return aller(pos + 1);
+    $("jeu").hidden = true;
+    $("fin").hidden = false;
+    $("titre-fin").focus();
+  });
+  $("melanger").addEventListener("click", () => { demarrer(true); annoncer("Cartes mélangées. Carte 1 sur " + CARTES.length + "."); });
+  $("recommencer").addEventListener("click", () => demarrer(true));
+  $("revoir").addEventListener("click", () => demarrer(false));
+
+  // Flèches gauche/droite pour passer d’une carte à l’autre
+  document.addEventListener("keydown", (e) => {
+    if ($("jeu").hidden) return;
+    if (e.key === "ArrowRight" && pos < CARTES.length - 1) aller(pos + 1);
+    if (e.key === "ArrowLeft" && pos > 0) aller(pos - 1);
+  });
+
+  afficher();
+</script>
+</body>
+</html>
