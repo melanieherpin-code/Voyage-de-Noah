@@ -13,6 +13,16 @@ const Progression = (() => {
         { cle: "jeu5", nom: "L’enquête Fortnite", lien: "../jeu5/" },
         { cle: "bilan", nom: "Bilan", lien: "../bilan/" }
       ]
+    },
+    mission2: {
+      titre: "Mission 2 : Le miroir des émotions",
+      etapes: [
+        { cle: "jeu1", nom: "Révéler le code", lien: "../jeu1/" },
+        { cle: "jeu2", nom: "Humain ou machine ?", lien: "../jeu2/" },
+        { cle: "jeu3", nom: "Ami ou outil ?", lien: "../jeu3/" },
+        { cle: "jeu4", nom: "Les bons verbes", lien: "../jeu4/" },
+        { cle: "bilan", nom: "Bilan", lien: "../bilan/" }
+      ]
     }
   };
 

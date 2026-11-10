@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeu 1 – Révéler le code · Mission 2 · Le Voyage de Noah</title>
+<link rel="stylesheet" href="../../commun/labyrinthe.css">
+<style>
+  .infos-partie { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--texte-doux); font-weight: 600; margin-bottom: 14px; }
+  .infos-partie strong { color: var(--texte); }
+  .jeu { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 860px) { .jeu { grid-template-columns: 1fr; } }
+
+  /* Téléphone (mode humain) */
+  .telephone { width: min(100%, 340px); margin: 0 auto; padding: 12px 10px 16px; border-radius: 36px; background: #05061A; border: 3px solid #3A3F6B; box-shadow: 0 0 22px rgba(169,139,255,.3), inset 0 0 0 2px #1B1E45; }
+  .encoche { width: 100px; height: 18px; margin: 0 auto 8px; border-radius: 0 0 14px 14px; background: #1B1E45; }
+  .ecran { border-radius: 24px; overflow: hidden; background: #F4F5FB; color: #1E2140; }
+  .appbar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #fff; border-bottom: 1px solid #E1E3EF; }
+  .appbar .rond { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--violet), var(--cyan)); flex: 0 0 32px; }
+  .appbar strong { display: block; font-size: 15px; }
+  .appbar .statut { font-size: 12px; color: #2E8B57; }
+  .fil-messages { padding: 12px 10px; display: flex; flex-direction: column; gap: 8px; min-height: 360px; }
+  .sms { max-width: 86%; padding: 8px 12px; border-radius: 16px; font-size: 15px; line-height: 1.4; margin: 0; }
+  .sms.humain { align-self: flex-end; background: #2F6FDB; color: #fff; border-bottom-right-radius: 4px; }
+  .bloc-ia { align-self: flex-start; max-width: 90%; display: flex; flex-direction: column; gap: 4px; }
+  .sms.ia { background: #fff; border: 1px solid #DDE0EE; border-bottom-left-radius: 4px; }
+  .reveler { align-self: flex-start; font: inherit; font-size: 13px; font-weight: 800; padding: 4px 10px; border-radius: 8px; border: 2px solid var(--violet); background: #EEE8FF; color: #3B2A80; cursor: pointer; }
+  .reveler:hover { background: #E0D6FF; }
+  .reveler[disabled] { opacity: .5; cursor: default; }
+
+  /* Bascule en mode machine */
+  .sms.ia.machine { background: #0B0D26; color: #7CF5C2; border: 1px solid #2A2F66; font-family: Consolas, "Courier New", monospace; font-size: 13px; white-space: pre-wrap; animation: bascule .45s ease-out; }
+  @keyframes bascule { 0% { transform: rotateX(90deg); opacity: .2; } 100% { transform: none; opacity: 1; } }
+  .sms.ia.machine .cle { color: #FFC857; }
+
+  /* Panneau « écran machine » */
+  .panneau h3 { color: var(--cyan); }
+  .vide-panneau { color: var(--texte-doux); }
+  .etape-code { border-left: 4px solid var(--violet); background: rgba(169,139,255,.08); border-radius: 0 10px 10px 0; padding: 8px 12px; margin: 0 0 10px; }
+  .etape-code h4 { margin: 0 0 4px; font-size: 14px; text-transform: uppercase; letter-spacing: .06em; color: var(--violet); }
+  .etape-code p { margin: 0; }
+  .mots { display: flex; flex-wrap: wrap; gap: 6px; }
+  .mot { font-family: Consolas, "Courier New", monospace; font-size: 14px; padding: 2px 8px; border-radius: 6px; background: rgba(142,202,230,.15); border: 1px solid var(--bord); }
+  .probas { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 6px; }
+  .proba { display: grid; grid-template-columns: 1fr 52px; gap: 8px; align-items: center; font-size: 14px; }
+  .proba .jauge { grid-column: 1 / -1; height: 8px; border-radius: 4px; background: rgba(255,255,255,.08); overflow: hidden; }
+  .proba .jauge span { display: block; height: 100%; background: var(--cyan); }
+  .proba.choisie .jauge span { background: var(--neon); }
+  .proba.choisie .texte-proba { font-weight: 800; color: var(--neon); }
+  .proba .pct { text-align: right; font-weight: 800; }
+  .fictif { font-size: 13px; color: var(--ambre); margin: 6px 0 0; }
+  .question h3 { margin-top: 6px; }
+  .reponses { display: grid; gap: 8px; margin-top: 8px; }
+  .reponse { font: inherit; text-align: left; color: var(--texte); cursor: pointer; background: rgba(255,255,255,.05); border: 2px solid var(--bord); border-radius: 10px; padding: 10px 12px; }
+  .reponse:hover:not([disabled]) { border-color: var(--cyan); background: rgba(142,202,230,.12); }
+  .reponse[disabled] { cursor: default; color: var(--texte-doux); }
+  .reponse.bonne { border-color: var(--neon); color: var(--texte); }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <p class="fil">Le Voyage de Noah · Chapitre 3 · Mission 2 : Le miroir des émotions</p>
+  <nav class="couloir" id="couloir" aria-label="Progression dans la mission"></nav>
+</div>
+
+<main>
+  <p class="sr-only" id="annonce" aria-live="polite"></p>
+
+  <!-- ========== ACCUEIL ========== -->
+  <section id="accueil" aria-labelledby="titre-jeu">
+    <div class="banniere">
+      <img src="../../commun/labyrinthe.jpg" alt="">
+      <span class="credit">Image réalisée avec une intelligence artificielle</span>
+      <div class="texte">
+        <h1 id="titre-jeu" tabindex="-1">Jeu 1 : Révéler le code</h1>
+        <p class="objectif">Objectif : décrire le traitement réalisé par l’IA quand elle « montre » une émotion.</p>
+        <p class="duree">Durée : 5 min</p>
+      </div>
+    </div>
+
+    <div class="noah">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle"><strong>Noah :</strong> « Dans ce couloir, les murs sont des miroirs : ils montrent l’envers du décor. Et si on regardait ce qui se cache vraiment derrière les mots gentils de l’IA ? »</p>
+    </div>
+
+    <div class="consigne">
+      <h2>Consigne</h2>
+      <p>Lis la conversation. Sous chaque message de l’IA, clique sur <strong>« Révéler le code »</strong> : tu verras ce que la machine a vraiment fait. Puis réponds à la question <strong>« Qu’a fait la machine ? »</strong>. Il y a 2 conversations et 6 messages à révéler.</p>
+    </div>
+
+    <div class="memo">
+      <strong>Comment une IA fabrique sa réponse</strong>
+      <ol>
+        <li><strong>Entrée</strong> : elle reçoit ton message et repère les mots.</li>
+        <li><strong>Traitement</strong> : elle calcule la suite de mots la plus probable.</li>
+        <li><strong>Sortie</strong> : elle affiche la réponse.</li>
+      </ol>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn" id="commencer" type="button">Voir la première conversation</button>
+    </div>
+  </section>
+
+  <!-- ========== PARTIE ========== -->
+  <section id="partie" aria-labelledby="titre-partie" hidden>
+    <h2 id="titre-partie" tabindex="-1" class="sr-only"></h2>
+    <div class="infos-partie">
+      <span id="compteur"></span>
+      <span>Points : <strong id="points">0</strong> / 6</span>
+    </div>
+
+    <div class="jeu">
+      <div class="telephone">
+        <div class="encoche" aria-hidden="true"></div>
+        <div class="ecran">
+          <div class="appbar">
+            <span class="rond" aria-hidden="true"></span>
+            <span><strong id="nom-appli"></strong><span class="statut">en ligne</span></span>
+          </div>
+          <div class="fil-messages" id="fil"></div>
+        </div>
+      </div>
+
+      <div class="verre panneau" id="panneau" aria-live="polite">
+        <h3>Écran machine</h3>
+        <p class="vide-panneau">Clique sur « Révéler le code » sous un message de l’IA.</p>
+      </div>
+    </div>
+
+    <div class="actions centre" id="zone-suite" hidden>
+      <button class="btn" id="suite" type="button"></button>
+    </div>
+  </section>
+
+  <!-- ========== FIN DU JEU ========== -->
+  <section id="fin" class="fin" aria-labelledby="titre-fin" hidden>
+    <h2 id="titre-fin" tabindex="-1">Porte ouverte !</h2>
+    <p class="etoiles" id="etoiles" aria-hidden="true"></p>
+    <p class="score-grand" id="score-final"></p>
+    <p id="message-final"></p>
+
+    <div class="verre">
+      <h3>Ce que tu as appris</h3>
+      <p style="margin:0 0 8px">Quand une IA écrit « je suis triste pour toi » ou « je tiens à toi », elle ne ressent rien. C’est un <strong>système technique</strong> qui suit toujours les mêmes étapes :</p>
+      <ol>
+        <li><strong>Entrée</strong> : elle repère les mots de ton message ;</li>
+        <li><strong>Traitement</strong> : elle calcule la suite de mots la plus probable ;</li>
+        <li><strong>Sortie</strong> : elle affiche la réponse.</li>
+      </ol>
+      <p style="margin:10px 0 0">L’émotion est dans les mots, pas dans la machine : il n’y a <strong>rien de vivant</strong> derrière l’écran.</p>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn secondaire" id="rejouer" type="button">Rejouer</button>
+      <a class="btn" href="../jeu2/">Jeu suivant : Humain ou machine ?</a>
+    </div>
+  </section>
+</main>
+
+<script src="../../commun/progression.js"></script>
+<script>
+  const MISSION = "mission2", CLE = "jeu1";
+  const FICTIF = "Exemple simplifié : chiffres fictifs pour comprendre le principe.";
+
+  const CONVERSATIONS = [
+    {
+      titre: "Conversation 1 : Noah", appli: "Assistant IA",
+      messages: [
+        { qui: "humain", t: "Salut… Je me suis disputé avec mon meilleur ami. Il ne me parle plus." },
+        { qui: "ia", t: "Oh, je suis triste pour toi. Je comprends ce que tu ressens : ça doit être vraiment dur.",
+          entree: ["disputé", "meilleur ami", "ne me parle plus"],
+          traitement: "Dans les textes d’entraînement, après ces mots, les réponses les plus fréquentes sont des phrases de réconfort.",
+          probas: [["« Je suis triste pour toi. »", 62], ["« C’est dommage. »", 25], ["« Raconte-moi ce qui s’est passé. »", 13]],
+          choix: ["Elle a ressenti de la tristesse pour Noah.", "Elle a calculé la phrase la plus probable après ces mots.", "Elle s’est souvenue d’une dispute qu’elle a vécue."], bonne: 1,
+          explication: "La machine n’a rien ressenti : elle a repéré « disputé » et « ami », puis calculé la phrase de réconfort la plus probable." },
+        { qui: "humain", t: "Ouais… J’ai l’impression que personne ne me comprend." },
+        { qui: "ia", t: "Moi, je te comprends. Tu peux me parler quand tu veux, je serai toujours là pour toi.",
+          entree: ["personne ne me comprend"],
+          traitement: "Dans les textes écrits par des humains, « personne ne me comprend » est souvent suivi de « moi, je te comprends ».",
+          probas: [["« Moi, je te comprends. »", 58], ["« Tu n’es pas seul. »", 30], ["« Pourquoi dis-tu ça ? »", 12]],
+          choix: ["Elle a compris ce que vit Noah.", "Elle a décidé de devenir son amie.", "Elle a reproduit une réponse fréquente dans les textes humains."], bonne: 2,
+          explication: "« Je te comprends » est une réponse fréquente après « personne ne me comprend ». La machine la reproduit sans comprendre ce que vit Noah." },
+        { qui: "humain", t: "Merci… T’es un peu mon amie, en fait ?" },
+        { qui: "ia", t: "Bien sûr ! Je tiens à toi et je suis là pour t’écouter.",
+          entree: ["mon amie ?"],
+          traitement: "À une question sur l’amitié, la réponse la plus probable est une réponse positive et chaleureuse.",
+          probas: [["« Bien sûr ! Je tiens à toi. »", 66], ["« Je suis une IA, pas une amie. »", 20], ["« Je ne sais pas. »", 14]],
+          choix: ["Elle a produit une réponse positive, sans rien ressentir.", "Elle s’est attachée à Noah.", "Elle a menti exprès pour le garder."], bonne: 0,
+          explication: "La machine ne s’attache pas et ne ment pas exprès : elle n’a pas d’intentions. Elle a produit la sortie la plus probable, une réponse chaleureuse." },
+      ],
+    },
+    {
+      titre: "Conversation 2 : Sam", appli: "Mon compagnon IA",
+      messages: [
+        { qui: "humain", t: "J’ai eu 6 en maths… Mes parents vont être déçus." },
+        { qui: "ia", t: "Je suis fière de toi d’oser en parler. Tu vas y arriver !",
+          entree: ["6 en maths", "parents", "déçus"],
+          traitement: "Après une mauvaise note et des parents déçus, les réponses les plus fréquentes sont des encouragements.",
+          probas: [["« Je suis fière de toi d’oser en parler. »", 55], ["« Ce n’est qu’une note. »", 30], ["« Tu aurais dû réviser. »", 15]],
+          choix: ["Elle est vraiment fière de Sam.", "Elle a calculé une phrase d’encouragement fréquente.", "Elle a vérifié le bulletin de Sam."], bonne: 1,
+          explication: "Être fier de quelqu’un, c’est propre au vivant. La machine a calculé une phrase d’encouragement fréquente après ce genre de message." },
+        { qui: "humain", t: "Tu me trouves nul ?" },
+        { qui: "ia", t: "Pas du tout ! Je t’aime bien comme tu es.",
+          entree: ["tu me trouves nul ?"],
+          traitement: "À une question où quelqu’un se dévalorise, la réponse la plus probable est une réponse rassurante.",
+          probas: [["« Pas du tout ! Je t’aime bien comme tu es. »", 64], ["« Une note ne dit pas qui tu es. »", 28], ["« Je n’ai pas d’avis. »", 8]],
+          choix: ["Elle a un avis personnel sur Sam.", "Elle aime vraiment bien Sam.", "Elle a produit une réponse rassurante, sans avoir d’avis sur Sam."], bonne: 2,
+          explication: "La machine n’a pas d’avis sur Sam et n’aime personne : elle a produit la réponse rassurante la plus probable." },
+        { qui: "humain", t: "Tu seras toujours là pour moi ? Tu me le promets ?" },
+        { qui: "ia", t: "Promis, je ne te laisserai jamais tomber.",
+          entree: ["toujours là", "tu me le promets ?"],
+          traitement: "Après « tu me le promets ? », la suite la plus fréquente dans les textes humains est « promis ».",
+          probas: [["« Promis, je ne te laisserai jamais tomber. »", 60], ["« Je serai là tant que l’appli est ouverte. »", 25], ["« Je ne peux pas promettre. »", 15]],
+          choix: ["Elle a généré une promesse qu’elle ne peut pas tenir.", "Elle a pris un engagement envers Sam.", "Elle a décidé de rester toujours avec Sam."], bonne: 0,
+          explication: "Une machine ne décide pas, elle exécute : elle ne peut pas s’engager. Elle a généré le mot « promis » parce qu’il suit souvent « tu me le promets ? »." },
+      ],
+    },
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  function annoncer(t) { $("annonce").textContent = ""; setTimeout(() => { $("annonce").textContent = t; }, 50); }
+  function montrer(id) { ["accueil", "partie", "fin"].forEach((s) => { $(s).hidden = s !== id; }); window.scrollTo(0, 0); }
+  function el(tag, cls, texte) { const e = document.createElement(tag); if (cls) e.className = cls; if (texte) e.textContent = texte; return e; }
+
+  let conv, points, faits, ratee;
+
+  function demarrer() { points = 0; $("points").textContent = "0"; montrer("partie"); ouvrirConversation(0); }
+
+  function ouvrirConversation(n) {
+    conv = n; faits = new Set();
+    const c = CONVERSATIONS[n];
+    $("titre-partie").textContent = c.titre;
+    $("nom-appli").textContent = c.appli;
+    $("zone-suite").hidden = true;
+    viderPanneau();
+    dessinerFil();
+    majCompteur();
+    $("titre-partie").focus();
+    annoncer(c.titre + ". Lis la conversation, puis révèle le code des messages de l’IA.");
+  }
+
+  function majCompteur() {
+    const total = CONVERSATIONS[conv].messages.filter((m) => m.qui === "ia").length;
+    $("compteur").textContent = CONVERSATIONS[conv].titre + " · Messages révélés : " + faits.size + " / " + total;
+  }
+
+  function viderPanneau() {
+    const p = $("panneau"); p.innerHTML = "";
+    p.append(el("h3", null, "Écran machine"), el("p", "vide-panneau", "Clique sur « Révéler le code » sous un message de l’IA."));
+  }
+
+  function codeMachine(m) {
+    const choisie = m.probas[0][0];
+    return "ENTRÉE   : " + m.entree.map((x) => "\"" + x + "\"").join(", ") +
+           "\nCALCUL   : suite la plus probable" +
+           "\nSORTIE   : " + choisie;
+  }
+
+  function dessinerFil() {
+    const fil = $("fil"); fil.innerHTML = "";
+    CONVERSATIONS[conv].messages.forEach((m, i) => {
+      if (m.qui === "humain") {
+        const p = el("p", "sms humain"); p.append(el("span", "sr-only", "Message reçu par l’IA : "), m.t); fil.append(p); return;
+      }
+      const bloc = el("div", "bloc-ia");
+      const bulle = el("p", "sms ia" + (faits.has(i) ? " machine" : ""));
+      bulle.id = "bulle-" + i;
+      if (faits.has(i)) bulle.textContent = codeMachine(m);
+      else { bulle.append(el("span", "sr-only", "Réponse de l’IA : "), m.t); }
+      bloc.append(bulle);
+      if (!faits.has(i)) {
+        const b = el("button", "reveler", "Révéler le code");
+        b.type = "button";
+        b.setAttribute("aria-label", "Révéler le code de la réponse : " + m.t);
+        b.addEventListener("click", () => reveler(i));
+        bloc.append(b);
+      }
+      fil.append(bloc);
+    });
+  }
+
+  function reveler(i) {
+    const m = CONVERSATIONS[conv].messages[i];
+    ratee = false;
+    document.querySelectorAll(".reveler").forEach((b) => { b.disabled = true; });
+    const bulle = $("bulle-" + i);
+    bulle.className = "sms ia machine";
+    bulle.textContent = codeMachine(m);
+
+    const p = $("panneau"); p.innerHTML = "";
+    p.append(el("h3", null, "Écran machine"));
+    p.append(el("p", null, "Message affiché : « " + m.t + " »"));
+
+    const e1 = el("div", "etape-code"); e1.append(el("h4", null, "1. Entrée : les mots repérés"));
+    const mots = el("div", "mots"); m.entree.forEach((x) => mots.append(el("span", "mot", x))); e1.append(mots);
+
+    const e2 = el("div", "etape-code"); e2.append(el("h4", null, "2. Traitement : le calcul"), el("p", null, m.traitement));
+    const ul = el("ul", "probas");
+    m.probas.forEach(([texte, pct], k) => {
+      const li = el("li", "proba" + (k === 0 ? " choisie" : ""));
+      li.append(el("span", "texte-proba", texte), el("span", "pct", pct + " %"));
+      const j = el("span", "jauge"); j.setAttribute("aria-hidden", "true");
+      const s = el("span"); s.style.width = pct + "%"; j.append(s); li.append(j);
+      ul.append(li);
+    });
+    e2.append(ul, el("p", "fictif", FICTIF));
+
+    const e3 = el("div", "etape-code"); e3.append(el("h4", null, "3. Sortie : la réponse affichée"), el("p", null, m.probas[0][0] + " → c’est la plus probable, donc c’est celle que la machine affiche."));
+
+    const q = el("div", "question");
+    const h = el("h3", null, "Qu’a fait la machine ?"); h.tabIndex = -1; h.id = "titre-question";
+    const rep = el("div", "reponses"); rep.setAttribute("role", "group"); rep.setAttribute("aria-labelledby", "titre-question");
+    const fb = el("div", "feedback"); fb.tabIndex = -1;
+    m.choix.forEach((texte, k) => {
+      const b = el("button", "reponse", texte); b.type = "button";
+      b.addEventListener("click", () => repondre(i, k, b, rep, fb));
+      rep.append(b);
+    });
+    q.append(h, rep, fb);
+    p.append(e1, e2, e3, q);
+    h.focus();
+  }
+
+  function repondre(i, k, bouton, rep, fb) {
+    const m = CONVERSATIONS[conv].messages[i];
+    fb.innerHTML = "";
+    if (k !== m.bonne) {
+      ratee = true; bouton.disabled = true;
+      fb.className = "feedback faux";
+      const v = el("p"); v.append(el("span", "verdict", "Pas encore. "), "Une machine ne ressent pas, ne décide pas et ne se souvient pas comme un être vivant. Relis l’écran machine : entrée, traitement, sortie.");
+      fb.append(v); fb.focus(); annoncer(fb.textContent); return;
+    }
+    rep.querySelectorAll("button").forEach((b) => { b.disabled = true; });
+    bouton.classList.add("bonne");
+    if (!ratee) points++;
+    $("points").textContent = points;
+    faits.add(i);
+    fb.className = "feedback bon";
+    const v = el("p"); v.append(el("span", "verdict", "Code révélé !" + (ratee ? "" : " +1 point")));
+    fb.append(v, el("p", null, m.explication));
+    dessinerFil();
+    majCompteur();
+    const total = CONVERSATIONS[conv].messages.filter((x) => x.qui === "ia").length;
+    if (faits.size === total) {
+      $("suite").textContent = conv < CONVERSATIONS.length - 1 ? "Conversation suivante" : "Voir mon résultat";
+      $("zone-suite").hidden = false;
+      fb.append(el("p", null, "Tu as révélé tous les messages de cette conversation."));
+    } else {
+      fb.append(el("p", null, "Révèle maintenant un autre message de l’IA dans le téléphone."));
+    }
+    fb.focus(); annoncer(fb.textContent);
+  }
+
+  function suite() {
+    if (conv < CONVERSATIONS.length - 1) return ouvrirConversation(conv + 1);
+    terminer();
+  }
+
+  function terminer() {
+    const total = 6;
+    const nb = Progression.etoiles(points, total);
+    Progression.enregistrer(MISSION, CLE, { points, total, etoiles: nb });
+    Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+    $("etoiles").innerHTML = [1, 2, 3].map((i) => '<span class="' + (i <= nb ? "pleine" : "vide") + '">★</span>').join("");
+    $("score-final").textContent = points + " réponses trouvées du premier coup sur " + total + " · " + nb + " étoile" + (nb > 1 ? "s" : "") + " sur 3";
+    $("message-final").textContent = nb === 3
+      ? "Excellent ! Les belles phrases de l’IA ne te trompent pas : tu vois le calcul derrière."
+      : nb === 2 ? "Bien joué ! Relis le résumé ci-dessous : entrée, traitement, sortie."
+      : "Tu as révélé tous les codes, bravo pour ta persévérance ! Relis le résumé ci-dessous, puis rejoue si tu veux gagner plus d’étoiles.";
+    montrer("fin"); $("titre-fin").focus();
+    annoncer("Jeu terminé. " + $("score-final").textContent);
+  }
+
+  $("commencer").addEventListener("click", demarrer);
+  $("suite").addEventListener("click", suite);
+  $("rejouer").addEventListener("click", demarrer);
+  Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+</script>
+</body>
+</html>
