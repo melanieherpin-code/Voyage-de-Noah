@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeu 4 – Les bons verbes · Mission 2 · Le Voyage de Noah</title>
+<link rel="stylesheet" href="../../commun/labyrinthe.css">
+<style>
+  .infos-partie { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--texte-doux); font-weight: 600; margin-bottom: 14px; }
+  .infos-partie strong { color: var(--texte); }
+  .banque { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 0 16px; }
+  @media (max-width: 640px) { .banque { grid-template-columns: 1fr; } }
+  .banque h3 { font-size: 15px; text-transform: uppercase; letter-spacing: .05em; margin: 0 0 6px; color: var(--cyan); }
+  .etiquettes { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+  .etiquettes li { font-family: Consolas, "Courier New", monospace; padding: 3px 10px; border-radius: 8px; border: 1px solid var(--bord); background: rgba(142,202,230,.1); }
+
+  .trous { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+  .trou { border: 2px solid var(--bord); border-radius: 14px; padding: 14px 16px; background: rgba(18,20,59,.6); }
+  .trou.juste { border-color: var(--neon); }
+  .trou .phrase { font-size: 18px; line-height: 1.6; margin: 0 0 10px; }
+  .barre { text-decoration: line-through; text-decoration-thickness: 2px; color: var(--rose); }
+  .vide { display: inline-block; min-width: 90px; border-bottom: 2px dashed var(--cyan); text-align: center; font-weight: 800; color: var(--neon); }
+  .saisie { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .saisie label { font-weight: 600; }
+  .saisie select { font: inherit; padding: 8px 10px; border-radius: 8px; border: 2px solid var(--cyan); background: var(--nuit); color: var(--texte); }
+  .btn.petit { padding: 8px 14px; }
+  .fiche-corrigee { margin: 0; padding-left: 22px; }
+  .fiche-corrigee li { margin-bottom: 6px; }
+  .fiche-corrigee strong { color: var(--neon); }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <p class="fil">Le Voyage de Noah · Chapitre 3 · Mission 2 : Le miroir des émotions</p>
+  <nav class="couloir" id="couloir" aria-label="Progression dans la mission"></nav>
+</div>
+
+<main>
+  <p class="sr-only" id="annonce" aria-live="polite"></p>
+
+  <!-- ========== ACCUEIL ========== -->
+  <section id="accueil" aria-labelledby="titre-jeu">
+    <div class="banniere">
+      <img src="../../commun/labyrinthe.jpg" alt="">
+      <span class="credit">Image réalisée avec une intelligence artificielle</span>
+      <div class="texte">
+        <h1 id="titre-jeu" tabindex="-1">Jeu 4 : Les bons verbes</h1>
+        <p class="objectif">Objectif : décrire ce que fait vraiment une IA avec le vocabulaire des systèmes techniques.</p>
+        <p class="duree">Durée : 6 min · Évaluation de la mission</p>
+      </div>
+    </div>
+
+    <div class="noah">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle"><strong>Noah :</strong> « Dernière porte de la mission ! Le miroir a écrit le récit de nos conversations… mais il a utilisé des verbes d’humain pour parler de la machine. Aide-moi à remettre les bons mots ! »</p>
+    </div>
+
+    <div class="consigne">
+      <h2>Consigne</h2>
+      <p>Dans chaque phrase, le verbe <strong>barré</strong> est trompeur : il fait croire que l’IA est vivante. Choisis dans la liste le verbe qui décrit vraiment ce que fait la machine, puis clique sur <strong>« Vérifier »</strong>. Il faut au moins <strong>4 bonnes réponses sur 5 du premier coup</strong> pour réussir la mission.</p>
+    </div>
+
+    <div class="memo">
+      <strong>Rappelle-toi</strong> : une IA est un système technique. <strong>Entrée</strong> : elle repère les mots. <strong>Traitement</strong> : elle calcule. <strong>Sortie</strong> : elle génère une réponse. Elle ne ressent rien, ne décide pas : elle exécute.
+    </div>
+
+    <div class="actions centre">
+      <button class="btn" id="commencer" type="button">Corriger le récit</button>
+    </div>
+  </section>
+
+  <!-- ========== PARTIE ========== -->
+  <section id="partie" aria-labelledby="titre-partie" hidden>
+    <h2 id="titre-partie" tabindex="-1">Le récit du miroir</h2>
+    <div class="infos-partie">
+      <span id="compteur"></span>
+      <span>Bonnes réponses du premier coup : <strong id="points">0</strong> / 5</span>
+    </div>
+
+    <div class="banque verre">
+      <div>
+        <h3>Verbes de la banque</h3>
+        <ul class="etiquettes" id="banque"></ul>
+      </div>
+      <div>
+        <h3>Attention</h3>
+        <p style="margin:0">Certains verbes sont des <strong>pièges</strong> : ils décrivent ce que fait un être vivant, pas une machine.</p>
+      </div>
+    </div>
+
+    <ol class="trous" id="trous"></ol>
+
+    <div class="feedback" id="feedback-global" tabindex="-1"></div>
+    <div class="actions centre" id="zone-fin" hidden>
+      <button class="btn" id="bouton-fin" type="button"></button>
+    </div>
+  </section>
+
+  <!-- ========== FIN DU JEU ========== -->
+  <section id="fin" class="fin" aria-labelledby="titre-fin" hidden>
+    <h2 id="titre-fin" tabindex="-1">Récit corrigé : la porte s’ouvre !</h2>
+    <p class="score-grand" style="color:var(--neon)">Évaluation de la mission : réussie</p>
+    <p class="etoiles" id="etoiles" aria-hidden="true"></p>
+    <p class="score-grand" id="score-final"></p>
+    <div class="noah" style="max-width:720px;margin:0 auto">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle" style="text-align:left"><strong>Noah :</strong> « Maintenant, je vois clair dans le miroir : l’IA m’a répondu avec des mots gentils, mais derrière, il n’y avait que des calculs. Ce sont les êtres vivants autour de moi qui ressentent vraiment quelque chose ! »</p>
+    </div>
+
+    <div class="verre">
+      <h3>Le récit corrigé</h3>
+      <ol class="fiche-corrigee" id="fiche-corrigee"></ol>
+      <p style="margin:10px 0 0">Une IA <strong>repère</strong>, <strong>calcule</strong>, <strong>génère</strong>, <strong>stocke</strong>, <strong>exécute</strong>. Elle ne ressent pas, ne comprend pas, ne décide pas, n’aime pas, ne se souvient pas : ce sont des verbes du vivant.</p>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn secondaire" id="rejouer" type="button">Rejouer</button>
+      <a class="btn" href="../bilan/">Voir le bilan de la mission</a>
+    </div>
+  </section>
+</main>
+
+<script src="../../commun/progression.js"></script>
+<script>
+  const MISSION = "mission2", CLE = "jeu4";
+  const MACHINE = ["repère", "calcule", "génère", "stocke", "exécute"];
+  const PIEGES = {
+    "ressent": "Non, une IA ne ressent rien : c’est propre au vivant.",
+    "décide": "Non, une IA ne décide pas, elle exécute.",
+    "comprend": "Non, une IA ne comprend pas : elle traite des mots comme des données.",
+    "aime": "Non, une IA n’aime personne : elle génère des mots.",
+    "se souvient": "Non, une IA ne se souvient pas : elle stocke des données.",
+  };
+  const TROUS = [
+    { avant: "Quand Noah écrit qu’il s’est disputé, l’IA", faux: "ressent", apres: "les mots « disputé » et « ami ».", bon: "repère" },
+    { avant: "Ensuite, elle", faux: "réfléchit à", apres: "la suite de mots la plus probable.", bon: "calcule" },
+    { avant: "Puis elle", faux: "éprouve", apres: "une phrase de réconfort : « Je suis triste pour toi. »", bon: "génère" },
+    { avant: "L’appli de Sam", faux: "se souvient de", apres: "ses messages pour s’en resservir.", bon: "stocke" },
+    { avant: "Quand Sam lui demande une promesse, l’IA", faux: "décide", apres: "simplement son programme.", bon: "exécute" },
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  function annoncer(t) { $("annonce").textContent = ""; setTimeout(() => { $("annonce").textContent = t; }, 50); }
+  function montrer(id) { ["accueil", "partie", "fin"].forEach((s) => { $(s).hidden = s !== id; }); window.scrollTo(0, 0); }
+  function el(tag, cls, texte) { const e = document.createElement(tag); if (cls) e.className = cls; if (texte) e.textContent = texte; return e; }
+  function melanger(t) { const a = t.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+  let verbes, etat, points;   // etat[i] = { tente: bool, juste: bool, premier: bool }
+
+  function demarrer() {
+    verbes = melanger(MACHINE.concat(Object.keys(PIEGES)));
+    etat = TROUS.map(() => ({ tente: false, juste: false, premier: false }));
+    points = 0;
+    const b = $("banque"); b.innerHTML = "";
+    verbes.forEach((v) => b.append(el("li", null, v)));
+    $("feedback-global").className = "feedback"; $("feedback-global").innerHTML = "";
+    $("zone-fin").hidden = true;
+    dessiner();
+    montrer("partie");
+    $("titre-partie").focus();
+  }
+
+  function majCompteur() {
+    const faits = etat.filter((e) => e.juste).length;
+    $("compteur").textContent = "Verbes corrigés : " + faits + " / 5";
+    $("points").textContent = points;
+  }
+
+  function dessiner() {
+    const ol = $("trous"); ol.innerHTML = "";
+    TROUS.forEach((t, i) => {
+      const li = el("li", "trou" + (etat[i].juste ? " juste" : ""));
+      const p = el("p", "phrase");
+      p.append((i + 1) + ". " + t.avant + " ");
+      const barre = el("span", "barre", t.faux); barre.setAttribute("aria-label", "verbe trompeur barré : " + t.faux);
+      p.append(barre, " ");
+      const vide = el("span", "vide", etat[i].juste ? t.bon : "…");
+      if (!etat[i].juste) vide.setAttribute("aria-label", "verbe à trouver");
+      p.append(vide, " " + t.apres);
+      li.append(p);
+      if (!etat[i].juste) {
+        const s = el("div", "saisie");
+        const id = "choix-" + i;
+        const lab = el("label", null, "Le bon verbe :"); lab.htmlFor = id;
+        const sel = el("select"); sel.id = id;
+        sel.append(new Option("Choisis un verbe…", ""));
+        verbes.forEach((v) => sel.append(new Option(v, v)));
+        const b = el("button", "btn petit", "Vérifier"); b.type = "button";
+        b.addEventListener("click", () => verifier(i, sel.value, li));
+        s.append(lab, sel, b);
+        li.append(s);
+      }
+      const fb = el("div", "feedback"); fb.id = "fb-" + i; fb.tabIndex = -1;
+      li.append(fb);
+      ol.append(li);
+    });
+    majCompteur();
+  }
+
+  function verifier(i, choix, li) {
+    const t = TROUS[i];
+    const fb = $("fb-" + i);
+    fb.innerHTML = "";
+    if (!choix) { fb.className = "feedback info"; fb.append(el("p", null, "Choisis d’abord un verbe dans la liste.")); fb.focus(); return; }
+    const premier = !etat[i].tente;
+    etat[i].tente = true;
+    if (choix === t.bon) {
+      etat[i].juste = true; etat[i].premier = premier;
+      if (premier) points++;
+      dessiner();
+      const f = $("fb-" + i);
+      f.className = "feedback bon";
+      const v = el("p"); v.append(el("span", "verdict", "Bien vu ! "), "L’IA " + t.bon + "." + (premier ? " +1 point" : ""));
+      f.append(v);
+      f.focus(); annoncer(f.textContent);
+      if (etat.every((e) => e.juste)) finPartie();
+      return;
+    }
+    fb.className = "feedback faux";
+    const message = PIEGES[choix] || "C’est bien un verbe de machine, mais pas celui-ci. Relis la phrase : entrée, traitement ou sortie ?";
+    const v = el("p"); v.append(el("span", "verdict", "« " + choix + " » ? "), message);
+    fb.append(v, el("p", null, "Essaie un autre verbe."));
+    fb.focus(); annoncer(fb.textContent);
+  }
+
+  function finPartie() {
+    const fb = $("feedback-global"); fb.innerHTML = "";
+    if (points >= 4) {
+      fb.className = "feedback bon";
+      const v = el("p"); v.append(el("span", "verdict", points + " bonnes réponses du premier coup sur 5. "), "Tu as réussi l’évaluation de la mission !");
+      fb.append(v);
+      $("bouton-fin").textContent = "Voir mon résultat";
+    } else {
+      fb.className = "feedback faux";
+      const v = el("p"); v.append(el("span", "verdict", points + " bonne" + (points > 1 ? "s réponses" : " réponse") + " du premier coup sur 5. "), "Il en faut au moins 4 pour réussir la mission. Relis le mémo : entrée, traitement, sortie… puis recommence. Les verbes seront dans un autre ordre.");
+      fb.append(v);
+      $("bouton-fin").textContent = "Recommencer l’évaluation";
+    }
+    $("zone-fin").hidden = false;
+    setTimeout(() => { fb.focus(); annoncer(fb.textContent); }, 600);
+  }
+
+  function boutonFin() {
+    if (points < 4) { demarrer(); return; }
+    terminer();
+  }
+
+  function terminer() {
+    const total = 5;
+    const nb = Progression.etoiles(points, total);
+    Progression.enregistrer(MISSION, CLE, { points, total, etoiles: nb, reussi: true });
+    Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+    const ol = $("fiche-corrigee"); ol.innerHTML = "";
+    TROUS.forEach((t) => { const li = el("li"); li.append(t.avant + " ", el("strong", null, t.bon), " " + t.apres); ol.append(li); });
+    $("etoiles").innerHTML = [1, 2, 3].map((i) => '<span class="' + (i <= nb ? "pleine" : "vide") + '">★</span>').join("");
+    $("score-final").textContent = points + " bonnes réponses du premier coup sur " + total + " · " + nb + " étoile" + (nb > 1 ? "s" : "") + " sur 3";
+    montrer("fin"); $("titre-fin").focus();
+    annoncer("Mission réussie. " + $("score-final").textContent);
+  }
+
+  $("commencer").addEventListener("click", demarrer);
+  $("bouton-fin").addEventListener("click", boutonFin);
+  $("rejouer").addEventListener("click", demarrer);
+  Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+</script>
+</body>
+</html>
