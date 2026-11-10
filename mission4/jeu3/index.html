@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeu 3 – Les messages piégés · Mission 4 · Le Voyage de Noah</title>
+<link rel="stylesheet" href="../../commun/labyrinthe.css">
+<style>
+  .infos-partie { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--texte-doux); font-weight: 600; margin-bottom: 14px; }
+  .infos-partie strong { color: var(--texte); }
+  .jeu { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 860px) { .jeu { grid-template-columns: 1fr; } }
+
+  .telephone { width: min(100%, 340px); margin: 0 auto; padding: 12px 10px 16px; border-radius: 36px; background: #05061A; border: 3px solid #3A3F6B; box-shadow: 0 0 22px rgba(169,139,255,.3), inset 0 0 0 2px #1B1E45; }
+  .encoche { width: 100px; height: 18px; margin: 0 auto 8px; border-radius: 0 0 14px 14px; background: #1B1E45; }
+  .ecran { border-radius: 24px; overflow: hidden; background: #F4F5FB; color: #1E2140; min-height: 400px; }
+  .appli { padding: 6px 14px; font-size: 12px; font-weight: 700; color: #6A6F8E; background: #E9EBF5; text-transform: uppercase; letter-spacing: .05em; }
+  .appbar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #fff; border-bottom: 1px solid #E1E3EF; }
+  .appbar .rond { width: 36px; height: 36px; border-radius: 50%; flex: 0 0 36px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; }
+  .appbar strong { display: block; font-size: 15px; }
+  .appbar .numero { font-size: 12px; color: #6A6F8E; }
+  .appbar .inconnu { color: #C0392B; font-weight: 800; }
+  .corps-tel { padding: 14px 12px; display: flex; flex-direction: column; gap: 8px; }
+  .heure-msg { align-self: center; font-size: 12px; color: #6A6F8E; }
+  .bulle-msg { align-self: flex-start; max-width: 88%; background: #fff; border: 1px solid #DDE0EE; border-radius: 16px 16px 16px 4px; padding: 10px 12px; font-size: 15px; line-height: 1.45; margin: 0; animation: apparition .35s ease-out; }
+
+  .verre h3 { color: var(--cyan); margin-top: 0; }
+  .signaux { border: 0; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; }
+  .signaux label { display: flex; gap: 10px; align-items: center; cursor: pointer; background: rgba(255,255,255,.05); border: 2px solid var(--bord); border-radius: 10px; padding: 8px 12px; }
+  .signaux input { width: 20px; height: 20px; accent-color: var(--ambre); flex: 0 0 20px; }
+  .signaux label.bonne { border-color: var(--neon); }
+  .reflexes { display: grid; gap: 8px; margin-top: 8px; }
+  .reflexes button { font: inherit; text-align: left; color: var(--texte); cursor: pointer; background: rgba(255,255,255,.05); border: 2px solid var(--bord); border-radius: 10px; padding: 10px 12px; }
+  .reflexes button:hover:not([disabled]) { border-color: var(--cyan); background: rgba(142,202,230,.12); }
+  .reflexes button[disabled] { cursor: default; opacity: .6; }
+  .reflexes button.bonne { opacity: 1; border-color: var(--neon); background: rgba(91,227,166,.12); }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <p class="fil">Le Voyage de Noah · Chapitre 3 · Mission 4 : L’écran truqué</p>
+  <nav class="couloir" id="couloir" aria-label="Progression dans la mission"></nav>
+</div>
+
+<main>
+  <p class="sr-only" id="annonce" aria-live="polite"></p>
+
+  <!-- ========== ACCUEIL ========== -->
+  <section id="accueil" aria-labelledby="titre-jeu">
+    <div class="banniere">
+      <img src="../../commun/labyrinthe.jpg" alt="">
+      <span class="credit">Image réalisée avec une intelligence artificielle</span>
+      <div class="texte">
+        <h1 id="titre-jeu" tabindex="-1">Jeu 3 : Les messages piégés</h1>
+        <p class="objectif">Objectif : repérer un message piégé et choisir le bon réflexe.</p>
+        <p class="duree">Durée : 5 min</p>
+      </div>
+    </div>
+
+    <div class="noah">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle"><strong>Noah :</strong> « Mon téléphone n’arrête pas de vibrer ! Le problème, c’est qu’une IA peut écrire exactement comme une personne que je connais, et même imiter sa voix. Aide-moi à repérer les messages piégés. »</p>
+    </div>
+
+    <div class="consigne">
+      <h2>Consigne</h2>
+      <p>Noah reçoit 4 messages. Pour chacun, lis-le bien, puis : <strong>1.</strong> coche les <strong>signaux d’alerte</strong> que tu repères ; <strong>2.</strong> choisis <strong>le bon réflexe</strong>.</p>
+    </div>
+
+    <div class="memo">
+      <strong>Les signaux d’alerte d’un message piégé</strong>
+      <ul>
+        <li>Un <strong>expéditeur inconnu</strong> (numéro ou compte), même s’il dit être un proche.</li>
+        <li>L’<strong>urgence</strong> : « vite », « tout de suite ».</li>
+        <li>Une demande d’<strong>argent</strong>, de <strong>code</strong> ou de <strong>mot de passe</strong>.</li>
+        <li>Une demande de <strong>transférer</strong> le message à tout le monde.</li>
+      </ul>
+      <p style="margin:6px 0 0">Le bon réflexe : <strong>vérifier par un autre canal</strong> que tu connais (le vrai numéro, l’ENT, le site officiel).</p>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn" id="commencer" type="button">Ouvrir la messagerie</button>
+    </div>
+  </section>
+
+  <!-- ========== PARTIE ========== -->
+  <section id="partie" aria-labelledby="titre-partie" hidden>
+    <h2 id="titre-partie" tabindex="-1" class="sr-only">Les messages de Noah</h2>
+    <div class="infos-partie">
+      <span id="compteur"></span>
+      <span>Points : <strong id="points">0</strong> / 8</span>
+    </div>
+
+    <div class="jeu">
+      <div class="telephone">
+        <div class="encoche" aria-hidden="true"></div>
+        <div class="ecran">
+          <div class="appli" id="appli"></div>
+          <div class="appbar">
+            <span class="rond" id="rond" aria-hidden="true"></span>
+            <span><strong id="expediteur"></strong><span class="numero" id="numero"></span></span>
+          </div>
+          <div class="corps-tel">
+            <span class="heure-msg" id="heure-msg"></span>
+            <p class="bulle-msg" id="bulle-msg"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="verre">
+        <div id="etape-signaux">
+          <h3 id="titre-signaux" tabindex="-1">1. Quels signaux d’alerte repères-tu ?</h3>
+          <fieldset class="signaux" id="signaux">
+            <legend class="sr-only">Signaux d’alerte</legend>
+            <label><input type="checkbox" value="inconnu"> Expéditeur inconnu (numéro ou compte)</label>
+            <label><input type="checkbox" value="urgence"> Urgence (« vite », « tout de suite »)</label>
+            <label><input type="checkbox" value="code"> Demande d’argent, de code ou de mot de passe</label>
+            <label><input type="checkbox" value="transferer"> Demande de transférer le message</label>
+            <label><input type="checkbox" value="aucun"> Aucun signal d’alerte</label>
+          </fieldset>
+          <div class="actions"><button class="btn" id="valider-signaux" type="button">Valider</button></div>
+          <div class="feedback" id="fb-signaux" tabindex="-1"></div>
+        </div>
+
+        <div id="etape-reflexe" hidden style="margin-top:14px">
+          <h3 id="titre-reflexe" tabindex="-1">2. Quel est le bon réflexe ?</h3>
+          <div class="reflexes" id="reflexes" role="group" aria-labelledby="titre-reflexe"></div>
+          <div class="feedback" id="fb-reflexe" tabindex="-1"></div>
+        </div>
+
+        <div class="actions" id="zone-suivante" hidden>
+          <button class="btn" id="suivante" type="button">Message suivant</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FIN DU JEU ========== -->
+  <section id="fin" class="fin" aria-labelledby="titre-fin" hidden>
+    <h2 id="titre-fin" tabindex="-1">Porte ouverte !</h2>
+    <p class="etoiles" id="etoiles" aria-hidden="true"></p>
+    <p class="score-grand" id="score-final"></p>
+    <p id="message-final"></p>
+
+    <div class="verre">
+      <h3>Ce que tu as appris</h3>
+      <p style="margin:0 0 8px">Une IA peut <strong>écrire comme une personne</strong> que tu connais, et même <strong>imiter sa voix</strong> : celle d’un parent, d’un principal, d’une star. Reconnaître un style ou une voix ne suffit donc plus à savoir qui te parle.</p>
+      <p style="margin:0">Repère les signaux d’alerte : <strong>expéditeur inconnu</strong>, <strong>urgence</strong>, demande de <strong>code, d’argent ou de mot de passe</strong>, demande de <strong>transférer</strong>. Et vérifie toujours <strong>par un autre canal</strong> que tu connais : le vrai numéro, l’ENT, le site officiel. En cas de doute, parles-en à un adulte.</p>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn secondaire" id="rejouer" type="button">Rejouer</button>
+      <a class="btn" href="../jeu4/">Jeu suivant : L’alerte du collège inondé</a>
+    </div>
+  </section>
+</main>
+
+<script src="../../commun/progression.js"></script>
+<script>
+  const MISSION = "mission4", CLE = "jeu3";
+  const NOMS = { inconnu: "expéditeur inconnu", urgence: "urgence", code: "demande de code ou de mot de passe", transferer: "demande de transférer", aucun: "aucun signal" };
+  const MESSAGES = [
+    { appli: "SMS", exp: "Numéro inconnu", numero: "+33 7 58 •• •• 41", inconnu: true, couleur: "#5B6080", heure: "Aujourd’hui, 21:47",
+      texte: "Bonjour, ici le principal du collège. Le collège sera fermé demain à cause d’une fuite de gaz. Transfère ce message à toute ta classe.",
+      signaux: ["inconnu", "transferer"],
+      reflexes: ["Je transfère tout de suite à la classe.", "Je vérifie sur l’ENT ou le site officiel du collège avant de faire quoi que ce soit.", "Je réponds à ce numéro pour poser des questions."], bonne: 1,
+      e: "Un principal n’annonce pas une fermeture par SMS depuis un numéro inconnu : il passe par l’ENT ou le site du collège. Vérifie là-bas avant de transférer." },
+    { appli: "SMS", exp: "Numéro inconnu", numero: "+33 6 12 •• •• 87", inconnu: true, couleur: "#E07A5F", heure: "Aujourd’hui, 16:05",
+      texte: "Coucou mon chéri, c’est maman ! J’ai cassé mon téléphone, je t’écris avec celui d’une collègue. Tu peux m’envoyer vite le code que tu viens de recevoir par SMS ? C’est urgent, je t’expliquerai ce soir. Bisous",
+      signaux: ["inconnu", "urgence", "code"],
+      reflexes: ["J’envoie le code, c’est ma mère.", "Je lui pose une question que seule ma mère connaît.", "Je n’envoie rien et j’appelle maman sur son vrai numéro."], bonne: 2,
+      e: "C’est une arnaque très répandue : avec un code reçu par SMS, quelqu’un peut voler un compte. Le message peut imiter la façon d’écrire de ta mère : appelle-la sur son vrai numéro." },
+    { appli: "Message privé · réseau social", exp: "StarGaming_officiel", numero: "Compte non vérifié · créé il y a 3 jours", inconnu: true, couleur: "#9B5DE5", heure: "Hier, 19:12",
+      texte: "Salut, c’est moi ! Tu as gagné mon concours ! Pour recevoir ton cadeau, envoie-moi le mot de passe de ton compte de jeu.",
+      signaux: ["inconnu", "code"],
+      reflexes: ["Je ne donne jamais mon mot de passe, et j’en parle à un adulte.", "Je donne mon mot de passe, puis je le change après.", "Je demande au compte une photo pour vérifier."], bonne: 0,
+      e: "Personne, même une star, n’a besoin de ton mot de passe. Un faux compte peut copier le nom et la photo d’une personne célèbre, et une IA peut fabriquer une photo « preuve »." },
+    { appli: "Appli du club", exp: "Club de foot", numero: "Contact enregistré", inconnu: false, couleur: "#3D9970", heure: "Aujourd’hui, 12:30",
+      texte: "Rappel : l’entraînement de mercredi est décalé à 18 heures.",
+      signaux: ["aucun"],
+      reflexes: ["Je bloque ce contact.", "Rien d’inquiétant : je note le nouvel horaire.", "Je vérifie auprès de la police."], bonne: 1,
+      e: "Contact connu, canal habituel, aucune demande bizarre : tout va bien. Pas besoin de voir des arnaques partout !" },
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  function annoncer(t) { $("annonce").textContent = ""; setTimeout(() => { $("annonce").textContent = t; }, 50); }
+  function montrer(id) { ["accueil", "partie", "fin"].forEach((s) => { $(s).hidden = s !== id; }); window.scrollTo(0, 0); }
+  function el(tag, cls, texte) { const e = document.createElement(tag); if (cls) e.className = cls; if (texte) e.textContent = texte; return e; }
+
+  let pos, points, rateeSignaux, rateeReflexe;
+
+  function cases() { return Array.from($("signaux").querySelectorAll("input")); }
+
+  function demarrer() { pos = 0; points = 0; $("points").textContent = "0"; montrer("partie"); afficher(); }
+
+  function afficher() {
+    rateeSignaux = false; rateeReflexe = false;
+    const m = MESSAGES[pos];
+    $("compteur").textContent = "Message " + (pos + 1) + " sur " + MESSAGES.length;
+    $("appli").textContent = m.appli;
+    $("rond").textContent = m.exp.charAt(0); $("rond").style.background = m.couleur;
+    $("expediteur").textContent = m.exp;
+    $("numero").textContent = m.numero; $("numero").className = "numero" + (m.inconnu ? " inconnu" : "");
+    $("heure-msg").textContent = m.heure;
+    const b = $("bulle-msg"); b.textContent = m.texte; b.classList.remove("bulle-msg"); void b.offsetWidth; b.classList.add("bulle-msg");
+    cases().forEach((c) => { c.checked = false; c.disabled = false; c.parentElement.classList.remove("bonne"); });
+    $("valider-signaux").disabled = false;
+    $("fb-signaux").className = "feedback"; $("fb-signaux").innerHTML = "";
+    $("etape-reflexe").hidden = true; $("zone-suivante").hidden = true;
+    $("titre-signaux").focus();
+    annoncer("Message " + (pos + 1) + ", " + m.appli + ". De : " + m.exp + ", " + m.numero + ". " + m.texte);
+  }
+
+  function gererAucun(e) {
+    if (e.target.value === "aucun" && e.target.checked) cases().forEach((c) => { if (c.value !== "aucun") c.checked = false; });
+    else if (e.target.checked) cases().find((c) => c.value === "aucun").checked = false;
+  }
+
+  function validerSignaux() {
+    const m = MESSAGES[pos];
+    const fb = $("fb-signaux"); fb.innerHTML = "";
+    const choisis = cases().filter((c) => c.checked).map((c) => c.value);
+    if (!choisis.length) { fb.className = "feedback info"; fb.append(el("p", null, "Coche au moins une case.")); fb.focus(); return; }
+    const manquants = m.signaux.filter((s) => !choisis.includes(s));
+    const enTrop = choisis.filter((s) => !m.signaux.includes(s));
+    if (manquants.length || enTrop.length) {
+      rateeSignaux = true;
+      fb.className = "feedback faux";
+      const v = el("p"); v.append(el("span", "verdict", "Pas encore. "));
+      if (m.signaux[0] === "aucun") v.append("Regarde qui envoie ce message et par quel canal : y a-t-il vraiment quelque chose de bizarre ?");
+      else if (choisis.includes("aucun")) v.append("Il y a au moins un signal d’alerte. Regarde l’expéditeur et ce que le message te demande.");
+      else { if (manquants.length) v.append("Il te manque " + (manquants.length > 1 ? manquants.length + " signaux" : "un signal") + ". "); if (enTrop.length) v.append("Une de tes cases ne correspond pas à ce message. "); v.append("Relis l’expéditeur et le message."); }
+      fb.append(v); fb.focus(); annoncer(fb.textContent); return;
+    }
+    cases().forEach((c) => { c.disabled = true; if (c.checked) c.parentElement.classList.add("bonne"); });
+    $("valider-signaux").disabled = true;
+    if (!rateeSignaux) points++;
+    $("points").textContent = points;
+    fb.className = "feedback bon";
+    const v = el("p"); v.append(el("span", "verdict", (m.signaux[0] === "aucun" ? "Bien vu, aucun signal d’alerte !" : "Signaux repérés : " + m.signaux.map((s) => NOMS[s]).join(", ") + ".") + (rateeSignaux ? "" : " +1 point")));
+    fb.append(v);
+    ouvrirReflexe();
+  }
+
+  function ouvrirReflexe() {
+    const m = MESSAGES[pos];
+    const z = $("reflexes"); z.innerHTML = "";
+    m.reflexes.forEach((t, k) => { const b = el("button", null, t); b.type = "button"; b.addEventListener("click", () => choisirReflexe(k, b)); z.append(b); });
+    $("fb-reflexe").className = "feedback"; $("fb-reflexe").innerHTML = "";
+    $("etape-reflexe").hidden = false;
+    $("titre-reflexe").focus();
+  }
+
+  function choisirReflexe(k, bouton) {
+    const m = MESSAGES[pos];
+    const fb = $("fb-reflexe"); fb.innerHTML = "";
+    if (k !== m.bonne) {
+      rateeReflexe = true; bouton.disabled = true;
+      fb.className = "feedback faux";
+      const v = el("p"); v.append(el("span", "verdict", "Pas encore. "), m.signaux[0] === "aucun" ? "Ce message vient d’un contact connu, par le canal habituel. Essaie encore." : "Le bon réflexe, c’est de ne rien envoyer et de vérifier par un autre canal que tu connais. Essaie encore.");
+      fb.append(v); fb.focus(); annoncer(fb.textContent); return;
+    }
+    $("reflexes").querySelectorAll("button").forEach((b) => { b.disabled = true; });
+    bouton.classList.add("bonne");
+    if (!rateeReflexe) points++;
+    $("points").textContent = points;
+    fb.className = "feedback bon";
+    const v = el("p"); v.append(el("span", "verdict", "Bon réflexe !" + (rateeReflexe ? "" : " +1 point")));
+    fb.append(v, el("p", null, m.e));
+    $("suivante").textContent = pos === MESSAGES.length - 1 ? "Voir mon résultat" : "Message suivant";
+    $("zone-suivante").hidden = false;
+    fb.focus(); annoncer(fb.textContent);
+  }
+
+  function suivante() { if (pos < MESSAGES.length - 1) { pos++; afficher(); } else terminer(); }
+
+  function terminer() {
+    const total = MESSAGES.length * 2;
+    const nb = Progression.etoiles(points, total);
+    Progression.enregistrer(MISSION, CLE, { points, total, etoiles: nb });
+    Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+    $("etoiles").innerHTML = [1, 2, 3].map((i) => '<span class="' + (i <= nb ? "pleine" : "vide") + '">★</span>').join("");
+    $("score-final").textContent = points + " points sur " + total + " · " + nb + " étoile" + (nb > 1 ? "s" : "") + " sur 3";
+    $("message-final").textContent = nb === 3
+      ? "Excellent ! Aucun message piégé ne te trompe : tu vérifies toujours par un autre canal."
+      : nb === 2 ? "Bien joué ! Relis le résumé ci-dessous : les signaux d’alerte et le bon réflexe."
+      : "Tu as lu tous les messages, bravo pour ta persévérance ! Relis le résumé ci-dessous, puis rejoue si tu veux gagner plus d’étoiles.";
+    montrer("fin"); $("titre-fin").focus();
+    annoncer("Jeu terminé. " + $("score-final").textContent);
+  }
+
+  cases().forEach((c) => c.addEventListener("change", gererAucun));
+  $("valider-signaux").addEventListener("click", validerSignaux);
+  $("suivante").addEventListener("click", suivante);
+  $("commencer").addEventListener("click", demarrer);
+  $("rejouer").addEventListener("click", demarrer);
+  Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+</script>
+</body>
+</html>
