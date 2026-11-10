@@ -33,6 +33,16 @@ const Progression = (() => {
         { cle: "jeu4", nom: "L’affiche du collège", lien: "../jeu4/" },
         { cle: "bilan", nom: "Bilan", lien: "../bilan/" }
       ]
+    },
+    mission4: {
+      titre: "Mission 4 : L’écran truqué",
+      etapes: [
+        { cle: "jeu1", nom: "Les indices de l’image", lien: "../jeu1/" },
+        { cle: "jeu2", nom: "Le fil d’actu", lien: "../jeu2/" },
+        { cle: "jeu3", nom: "La voix truquée", lien: "../jeu3/" },
+        { cle: "jeu4", nom: "L’alerte du collège inondé", lien: "../jeu4/" },
+        { cle: "bilan", nom: "Bilan", lien: "../bilan/" }
+      ]
     }
   };
 

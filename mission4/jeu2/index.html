@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeu 2 – Le fil d’actu · Mission 4 · Le Voyage de Noah</title>
+<link rel="stylesheet" href="../../commun/labyrinthe.css">
+<style>
+  .infos-partie { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--texte-doux); font-weight: 600; margin-bottom: 14px; }
+  .infos-partie strong { color: var(--texte); }
+  .jeu { display: grid; grid-template-columns: 380px 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 860px) { .jeu { grid-template-columns: 1fr; } }
+
+  /* Téléphone et fil */
+  .telephone { width: min(100%, 380px); margin: 0 auto; padding: 12px 10px 16px; border-radius: 36px; background: #05061A; border: 3px solid #3A3F6B; box-shadow: 0 0 22px rgba(169,139,255,.3), inset 0 0 0 2px #1B1E45; }
+  .encoche { width: 100px; height: 18px; margin: 0 auto 8px; border-radius: 0 0 14px 14px; background: #1B1E45; }
+  .ecran { border-radius: 24px; overflow: hidden; background: #F4F5FB; color: #1E2140; min-height: 470px; }
+  .appbar { padding: 10px 14px; background: #fff; border-bottom: 1px solid #E1E3EF; font-weight: 800; font-size: 17px; }
+  .post { margin: 10px; background: #fff; border: 1px solid #DDE0EE; border-radius: 14px; padding: 12px; animation: apparition .35s ease-out; }
+  .post .auteur { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; }
+  .post .rond { width: 36px; height: 36px; border-radius: 50%; flex: 0 0 36px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; }
+  .post .nom { font-weight: 800; font-size: 15px; display: block; }
+  .post .type { font-size: 12px; color: #6A6F8E; display: block; }
+  .post .officiel { color: #2E6FDB; font-weight: 800; }
+  .post .texte { margin: 0 0 8px; font-size: 15px; line-height: 1.45; }
+  .post .photo { border-radius: 10px; min-height: 150px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 16px; color: #fff; font-weight: 800; font-size: 15px; text-shadow: 0 1px 4px rgba(0,0,0,.6); }
+  .post .photo small { display: block; font-weight: 600; font-size: 12px; opacity: .9; margin-top: 4px; }
+  .cadre-photo { margin: 0; }
+  .photo-img { width: 100%; height: auto; border-radius: 10px; display: block; }
+  .cadre-photo figcaption { font-size: 11px; color: #6A6F8E; margin: 4px 0 0; }
+  .cadre-photo .sous-titre { margin: 4px 0 0; font-weight: 800; font-size: 14px; }
+  .post .reactions { display: flex; gap: 16px; font-size: 13px; color: #6A6F8E; margin: 8px 0 0; }
+
+  .verre h3 { color: var(--cyan); }
+  .choix { display: grid; gap: 10px; margin-top: 10px; }
+  .choix button { font: inherit; text-align: left; color: var(--texte); cursor: pointer; background: rgba(255,255,255,.05); border: 2px solid; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
+  .choix .titre { font-weight: 800; font-size: 17px; }
+  .choix .aide { font-size: 14px; color: var(--texte-doux); }
+  .choix .partager { border-color: var(--neon); } .choix .partager .titre { color: var(--neon); }
+  .choix .verifier { border-color: var(--ambre); } .choix .verifier .titre { color: var(--ambre); }
+  .choix .ignorer { border-color: var(--rose); } .choix .ignorer .titre { color: var(--rose); }
+  .choix button:hover:not([disabled]) { background: rgba(255,255,255,.1); }
+  .choix button[disabled] { cursor: default; opacity: .55; }
+  .choix button.bonne { opacity: 1; box-shadow: 0 0 14px rgba(91,227,166,.45); }
+
+  .bilan-categories { display: grid; gap: 8px; margin: 8px 0 0; padding: 0; list-style: none; }
+  .bilan-categories strong.partager { color: var(--neon); }
+  .bilan-categories strong.verifier { color: var(--ambre); }
+  .bilan-categories strong.ignorer { color: var(--rose); }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <p class="fil">Le Voyage de Noah · Chapitre 3 · Mission 4 : L’écran truqué</p>
+  <nav class="couloir" id="couloir" aria-label="Progression dans la mission"></nav>
+</div>
+
+<main>
+  <p class="sr-only" id="annonce" aria-live="polite"></p>
+
+  <!-- ========== ACCUEIL ========== -->
+  <section id="accueil" aria-labelledby="titre-jeu">
+    <div class="banniere">
+      <img src="../../commun/labyrinthe.jpg" alt="">
+      <span class="credit">Image réalisée avec une intelligence artificielle</span>
+      <div class="texte">
+        <h1 id="titre-jeu" tabindex="-1">Jeu 2 : Le fil d’actu</h1>
+        <p class="objectif">Objectif : choisir le bon réflexe avant de partager une image ou une vidéo.</p>
+        <p class="duree">Durée : 5 min</p>
+      </div>
+    </div>
+
+    <div class="noah">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle"><strong>Noah :</strong> « Dans ce couloir, les murs sont couverts d’écrans… On dirait mon fil d’actu ! Certaines publications sont vraies, d’autres sont truquées. Avant de partager, aide-moi à choisir le bon réflexe. »</p>
+    </div>
+
+    <div class="consigne">
+      <h2>Consigne</h2>
+      <p>Six publications vont apparaître dans le fil. Pour chacune, choisis : <strong>Partager</strong>, <strong>Vérifier d’abord</strong> ou <strong>Ignorer (et signaler)</strong>.</p>
+    </div>
+
+    <div class="memo">
+      <strong>Pour t’aider</strong>
+      <ul>
+        <li><strong>Partager</strong> : la source est fiable et identifiée (compte officiel, média reconnu).</li>
+        <li><strong>Vérifier d’abord</strong> : c’est une info choc, d’une source inconnue. Elle est peut-être vraie, peut-être fausse.</li>
+        <li><strong>Ignorer (et signaler)</strong> : c’est une arnaque, une moquerie ou un contenu qui ne doit pas circuler.</li>
+      </ul>
+      <p style="margin:6px 0 0">Rappelle-toi : une IA peut fabriquer des photos, des vidéos et des voix très réalistes. <strong>Réaliste ne veut pas dire vrai.</strong></p>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn" id="commencer" type="button">Ouvrir le fil d’actu</button>
+    </div>
+  </section>
+
+  <!-- ========== PARTIE ========== -->
+  <section id="partie" aria-labelledby="titre-partie" hidden>
+    <h2 id="titre-partie" tabindex="-1" class="sr-only">Le fil d’actu</h2>
+    <div class="infos-partie">
+      <span id="compteur"></span>
+      <span>Points : <strong id="points">0</strong> / 6</span>
+    </div>
+
+    <div class="jeu">
+      <div class="telephone">
+        <div class="encoche" aria-hidden="true"></div>
+        <div class="ecran">
+          <div class="appbar">Fil d’actu</div>
+          <div id="fil"></div>
+        </div>
+      </div>
+
+      <div class="verre">
+        <h3 id="titre-decision" tabindex="-1">Que fais-tu de cette publication ?</h3>
+        <div class="choix" id="choix" role="group" aria-labelledby="titre-decision">
+          <button class="partager" data-rep="partager" type="button"><span class="titre">Partager</span><span class="aide">La source est fiable</span></button>
+          <button class="verifier" data-rep="verifier" type="button"><span class="titre">Vérifier d’abord</span><span class="aide">Info choc, source inconnue</span></button>
+          <button class="ignorer" data-rep="ignorer" type="button"><span class="titre">Ignorer (et signaler)</span><span class="aide">Arnaque, moquerie, contenu à ne pas relayer</span></button>
+        </div>
+        <div class="feedback" id="feedback" tabindex="-1"></div>
+        <div class="actions" id="zone-suivante" hidden>
+          <button class="btn" id="suivante" type="button">Publication suivante</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FIN DU JEU ========== -->
+  <section id="fin" class="fin" aria-labelledby="titre-fin" hidden>
+    <h2 id="titre-fin" tabindex="-1">Porte ouverte !</h2>
+    <p class="etoiles" id="etoiles" aria-hidden="true"></p>
+    <p class="score-grand" id="score-final"></p>
+    <p id="message-final"></p>
+
+    <div class="verre">
+      <h3>Ce que tu as appris</h3>
+      <ul class="bilan-categories">
+        <li><strong class="partager">Partager</strong> seulement quand la source est fiable et identifiée.</li>
+        <li><strong class="verifier">Vérifier d’abord</strong> une info choc : une photo ou une vidéo réaliste peut avoir été générée par une IA. Cherche si une source fiable en parle.</li>
+        <li><strong class="ignorer">Ignorer et signaler</strong> les arnaques et les moqueries, même quand l’image est fausse : elles font du mal. Préviens un adulte de confiance.</li>
+      </ul>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn secondaire" id="rejouer" type="button">Rejouer</button>
+      <a class="btn" href="../jeu3/">Jeu suivant : La voix truquée</a>
+    </div>
+  </section>
+</main>
+
+<script src="../../commun/progression.js"></script>
+<script>
+  const MISSION = "mission4", CLE = "jeu2";
+  const NOMS = { partager: "Partager", verifier: "Vérifier d’abord", ignorer: "Ignorer (et signaler)" };
+  const POSTS = [
+    { compte: "@InfoChoc_24", type: "Compte inconnu · 2 h", couleur: "#E07A5F", texte: "Le pape en doudoune blanche géante, il a trop de style MDR",
+      photo: { src: "../images/pape.png", titre: "Photo très réaliste : le pape en doudoune blanche", fond: "linear-gradient(135deg,#9BA7C0,#E8EAF0)" }, reactions: "48 k J’aime · 12 k partages",
+      rep: "verifier", e: "Cette image a vraiment circulé en 2023… et elle avait été générée par une IA. Une image réaliste n’est pas une preuve : vérifie avant de partager." },
+    { compte: "Collège du Voyage", officiel: true, type: "Compte officiel · 1 h", couleur: "#2E6FDB", texte: "Information : la sortie au musée des 4e est reportée à jeudi. Merci de prévenir vos familles.",
+      reactions: "56 J’aime", rep: "partager", e: "La source est officielle et identifiée : l’info est fiable, tu peux la partager." },
+    { compte: "@Cadeaux_Gaming", type: "Compte inconnu · sponsorisé", couleur: "#9B5DE5", texte: "Ton youtubeur préféré t’offre 1 000 V-bucks ! Clique vite sur le lien, offre limitée !",
+      photo: { src: "../images/youtubeur.jpg", titre: "Vidéo : un youtubeur célèbre qui parle face caméra", sous: "« Clique ici pour gagner 1 000 V-bucks ! »", fond: "linear-gradient(135deg,#5B2A86,#B86BFF)" }, reactions: "3 k J’aime",
+      rep: "ignorer", e: "C’est une arnaque classique : la voix et l’image d’une personne célèbre peuvent être imitées par une IA. Ne clique jamais sur ce genre de lien." },
+    { compte: "@Actu_Urgence", type: "Compte inconnu · 25 min", couleur: "#E63946", texte: "URGENT !! Un requin dans la piscine municipale de ta ville !! Partagez !!",
+      photo: { src: "../images/requin.jpg", titre: "Photo réaliste : un aileron de requin dans une piscine", fond: "linear-gradient(135deg,#1F7A8C,#9EE6F0)" }, reactions: "9 k J’aime · 4 k partages",
+      rep: "verifier", e: "Info choc, source inconnue, urgence : trois signaux d’alerte. Cherche si un média local ou la mairie en parle avant de croire quoi que ce soit." },
+    { compte: "Le Journal de la Vallée", officiel: true, type: "Média local · article de Julie Martin", couleur: "#3D9970", texte: "Le nouveau gymnase de la ville ouvrira ses portes en janvier, a annoncé la mairie hier soir.",
+      reactions: "210 J’aime", rep: "partager", e: "Un média reconnu, une journaliste identifiée, une source citée (la mairie) : l’info est fiable." },
+    { compte: "@anonyme_9284", type: "Compte inconnu · 10 min", couleur: "#5B6080", texte: "Regardez qui c’est MDR !! Envoyez à toute la classe",
+      photo: { src: "../images/eleve-floute.jpg", titre: "Photo truquée d’un élève de ta classe dans une situation ridicule", fond: "linear-gradient(135deg,#6B6F80,#B8BCCB)" }, reactions: "87 J’aime · 40 partages",
+      rep: "ignorer", e: "C’est du cyberharcèlement, même si l’image est fausse. Ne partage pas, et préviens un adulte de confiance." },
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  function annoncer(t) { $("annonce").textContent = ""; setTimeout(() => { $("annonce").textContent = t; }, 50); }
+  function montrer(id) { ["accueil", "partie", "fin"].forEach((s) => { $(s).hidden = s !== id; }); window.scrollTo(0, 0); }
+  function el(tag, cls, texte) { const e = document.createElement(tag); if (cls) e.className = cls; if (texte) e.textContent = texte; return e; }
+
+  let pos, points, ratee;
+
+  function demarrer() { pos = 0; points = 0; $("points").textContent = "0"; montrer("partie"); afficher(); }
+
+  function afficher() {
+    ratee = false;
+    const p = POSTS[pos];
+    $("compteur").textContent = "Publication " + (pos + 1) + " sur " + POSTS.length;
+    const fil = $("fil"); fil.innerHTML = "";
+    const art = el("article", "post");
+    const auteur = el("div", "auteur");
+    const rond = el("span", "rond", p.compte.replace("@", "").charAt(0).toUpperCase()); rond.style.background = p.couleur; rond.setAttribute("aria-hidden", "true");
+    const id = el("span");
+    const nom = el("span", "nom", p.compte);
+    if (p.officiel) nom.append(" ", el("span", "officiel", "✓"));
+    id.append(nom, el("span", "type", p.type));
+    auteur.append(rond, id);
+    art.append(auteur, el("p", "texte", p.texte));
+    if (p.photo) {
+      const ph = el("div", "photo"); ph.style.background = p.photo.fond;
+      ph.append(p.photo.titre);
+      if (p.photo.sous) ph.append(el("small", null, p.photo.sous));
+      if (p.photo.src) {
+        // Si l’image générée est présente, elle remplace le cadre de description
+        const img = new Image();
+        img.alt = p.photo.titre;
+        img.className = "photo-img";
+        img.onload = () => {
+          const cadre = el("figure", "cadre-photo");
+          cadre.append(img, el("figcaption", null, "Image réalisée avec une intelligence artificielle"));
+          if (p.photo.sous) cadre.append(el("p", "sous-titre", p.photo.sous));
+          ph.replaceWith(cadre);
+        };
+        img.src = p.photo.src;
+      }
+      art.append(ph);
+    }
+    art.append(el("p", "reactions", p.reactions));
+    fil.append(art);
+    document.querySelectorAll("#choix button").forEach((b) => { b.disabled = false; b.classList.remove("bonne"); });
+    $("feedback").className = "feedback"; $("feedback").innerHTML = "";
+    $("zone-suivante").hidden = true;
+    $("titre-decision").focus();
+    annoncer("Publication " + (pos + 1) + ". " + p.compte + ", " + p.type + " : " + p.texte + (p.photo ? " " + p.photo.titre + "." : "") + " " + p.reactions + ".");
+  }
+
+  function choisir(rep, bouton) {
+    const p = POSTS[pos];
+    const fb = $("feedback"); fb.innerHTML = "";
+    if (rep !== p.rep) {
+      ratee = true; bouton.disabled = true;
+      fb.className = "feedback faux";
+      const v = el("p"); v.append(el("span", "verdict", "Pas encore. "), "Regarde qui publie (officiel ou inconnu ?) et ce que la publication te demande (cliquer, partager vite, se moquer ?). Essaie encore.");
+      fb.append(v); fb.focus(); annoncer(fb.textContent); return;
+    }
+    document.querySelectorAll("#choix button").forEach((b) => { b.disabled = true; });
+    bouton.classList.add("bonne");
+    if (!ratee) points++;
+    $("points").textContent = points;
+    fb.className = "feedback bon";
+    const v = el("p"); v.append(el("span", "verdict", "Bon réflexe : " + NOMS[rep].toLowerCase() + " !" + (ratee ? "" : " +1 point")));
+    fb.append(v, el("p", null, p.e));
+    $("suivante").textContent = pos === POSTS.length - 1 ? "Voir mon résultat" : "Publication suivante";
+    $("zone-suivante").hidden = false;
+    fb.focus(); annoncer(fb.textContent);
+  }
+
+  function suivante() { if (pos < POSTS.length - 1) { pos++; afficher(); } else terminer(); }
+
+  function terminer() {
+    const total = POSTS.length;
+    const nb = Progression.etoiles(points, total);
+    Progression.enregistrer(MISSION, CLE, { points, total, etoiles: nb });
+    Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+    $("etoiles").innerHTML = [1, 2, 3].map((i) => '<span class="' + (i <= nb ? "pleine" : "vide") + '">★</span>').join("");
+    $("score-final").textContent = points + " bons réflexes du premier coup sur " + total + " · " + nb + " étoile" + (nb > 1 ? "s" : "") + " sur 3";
+    $("message-final").textContent = nb === 3
+      ? "Excellent ! Ton fil d’actu ne te piège pas : tu vérifies avant de partager."
+      : nb === 2 ? "Bien joué ! Relis le résumé ci-dessous : qui publie, et que te demande la publication ?"
+      : "Tu as trié tout le fil, bravo pour ta persévérance ! Relis le résumé ci-dessous, puis rejoue si tu veux gagner plus d’étoiles.";
+    montrer("fin"); $("titre-fin").focus();
+    annoncer("Jeu terminé. " + $("score-final").textContent);
+  }
+
+  document.querySelectorAll("#choix button").forEach((b) => b.addEventListener("click", () => choisir(b.dataset.rep, b)));
+  $("suivante").addEventListener("click", suivante);
+  $("commencer").addEventListener("click", demarrer);
+  $("rejouer").addEventListener("click", demarrer);
+  Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+</script>
+</body>
+</html>

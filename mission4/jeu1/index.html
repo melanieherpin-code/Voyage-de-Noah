@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeu 1 – Les indices de l’image · Mission 4 · Le Voyage de Noah</title>
+<link rel="stylesheet" href="../../commun/labyrinthe.css">
+<style>
+  .infos-partie { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--texte-doux); font-weight: 600; margin-bottom: 14px; }
+  .infos-partie strong { color: var(--texte); }
+  .ecran-geant { border: 3px solid var(--cyan); border-radius: 14px; padding: 8px; background: #05061A; box-shadow: 0 0 26px rgba(142,202,230,.35); }
+  .scene { position: relative; line-height: 0; }
+  .scene img { width: 100%; height: auto; border-radius: 8px; display: block; }
+  .zone { position: absolute; transform: translate(-50%, -50%); border-radius: 50%; border: 3px dashed transparent; background: transparent; cursor: zoom-in; padding: 0; }
+  .zone:hover:not([disabled]), .zone:focus-visible { border-color: rgba(255,200,87,.9); background: rgba(255,200,87,.12); outline: none; }
+  .zone.trouve { border: 3px solid var(--neon); background: rgba(91,227,166,.18); cursor: default; }
+  .zone.rien { border: 3px solid rgba(255,138,138,.8); background: rgba(255,138,138,.1); cursor: default; }
+  .zone .num { position: absolute; top: -12px; right: -12px; width: 26px; height: 26px; border-radius: 50%; background: var(--neon); color: var(--nuit); font: 800 14px/26px "Libre Franklin", Arial, sans-serif; text-align: center; }
+  .credit-img { font-size: 12px; color: var(--texte-doux); margin: 6px 0 0; line-height: 1.4; }
+  .grille-jeu { display: grid; grid-template-columns: 1.6fr 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 900px) { .grille-jeu { grid-template-columns: 1fr; } }
+  .trouves { margin: 8px 0 0; padding-left: 22px; }
+  .trouves li { margin-bottom: 6px; }
+  .liste-zones { margin-top: 10px; }
+  .liste-zones summary { cursor: pointer; font-weight: 600; color: var(--cyan); }
+  .liste-zones ul { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 6px; }
+  .liste-zones button { font: inherit; width: 100%; text-align: left; color: var(--texte); background: rgba(255,255,255,.05); border: 1px solid var(--bord); border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+  .liste-zones button[disabled] { opacity: .6; cursor: default; }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <p class="fil">Le Voyage de Noah · Chapitre 3 · Mission 4 : L’écran truqué</p>
+  <nav class="couloir" id="couloir" aria-label="Progression dans la mission"></nav>
+</div>
+
+<main>
+  <p class="sr-only" id="annonce" aria-live="polite"></p>
+
+  <!-- ========== ACCUEIL ========== -->
+  <section id="accueil" aria-labelledby="titre-jeu">
+    <div class="banniere">
+      <img src="../../commun/labyrinthe.jpg" alt="">
+      <span class="credit">Image réalisée avec une intelligence artificielle</span>
+      <div class="texte">
+        <h1 id="titre-jeu" tabindex="-1">Jeu 1 : Les indices de l’image</h1>
+        <p class="objectif">Objectif : repérer les détails qui trahissent une image générée par une IA.</p>
+        <p class="duree">Durée : 5 min</p>
+      </div>
+    </div>
+
+    <div class="noah">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle"><strong>Noah :</strong> « Un écran géant s’allume dans le couloir : un reportage sur une inondation. Ça a l’air tellement vrai… Mais quelque chose cloche. Aide-moi à trouver les indices ! »</p>
+    </div>
+
+    <div class="consigne">
+      <h2>Consigne</h2>
+      <p>Cette image a été générée par une IA. Clique sur les endroits qui te paraissent bizarres : il y a <strong>5 indices</strong> cachés. Attention, chaque clic sur un endroit normal compte comme une erreur.</p>
+    </div>
+
+    <div class="memo">
+      <strong>Où regarder ?</strong>
+      <ul>
+        <li>Les <strong>mains</strong> : nombre de doigts, position bizarre.</li>
+        <li>Les <strong>textes</strong> : lettres déformées, mots qui ne veulent rien dire.</li>
+        <li>Les <strong>objets</strong> : horloges, bijoux, lunettes qui ont des formes étranges.</li>
+        <li>La <strong>lumière</strong> : ombres et reflets qui ne correspondent pas.</li>
+      </ul>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn" id="commencer" type="button">Examiner l’écran</button>
+    </div>
+  </section>
+
+  <!-- ========== PARTIE ========== -->
+  <section id="partie" aria-labelledby="titre-partie" hidden>
+    <h2 id="titre-partie" tabindex="-1" class="sr-only">Trouve les 5 indices</h2>
+    <div class="infos-partie">
+      <span id="compteur">Indices trouvés : 0 / 5</span>
+      <span>Erreurs : <strong id="erreurs">0</strong></span>
+    </div>
+
+    <div class="grille-jeu">
+      <div>
+        <div class="ecran-geant">
+          <div class="scene" id="scene">
+            <img src="../images/journaliste.jpg" alt="Une journaliste en veste rouge, micro à la main, fait un reportage devant une rivière en crue, avec une église et un pont derrière elle.">
+          </div>
+        </div>
+        <p class="credit-img">Image réalisée avec une intelligence artificielle</p>
+      </div>
+
+      <div class="verre">
+        <h3>Tes indices</h3>
+        <ol class="trouves" id="trouves"></ol>
+        <p id="aucun" style="margin:0;color:var(--texte-doux)">Clique sur un détail bizarre de l’image.</p>
+        <div class="feedback" id="feedback" tabindex="-1"></div>
+        <details class="liste-zones">
+          <summary>Examiner l’image avec une liste de zones</summary>
+          <ul id="liste"></ul>
+        </details>
+        <div class="actions" id="zone-fin" hidden>
+          <button class="btn" id="voir-resultat" type="button">Voir mon résultat</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FIN DU JEU ========== -->
+  <section id="fin" class="fin" aria-labelledby="titre-fin" hidden>
+    <h2 id="titre-fin" tabindex="-1">Porte ouverte !</h2>
+    <p class="etoiles" id="etoiles" aria-hidden="true"></p>
+    <p class="score-grand" id="score-final"></p>
+    <p id="message-final"></p>
+
+    <div class="verre">
+      <h3>Ce que tu as appris</h3>
+      <p style="margin:0 0 8px">Une image générée par une IA peut sembler parfaite au premier coup d’œil. En regardant de près, on trouve parfois des <strong>indices</strong> : des mains bizarres, des textes illisibles, des objets déformés, des ombres et des reflets impossibles.</p>
+      <p style="margin:0"><strong>Attention :</strong> les IA progressent très vite, et ces défauts sont de plus en plus rares. Une image sans défaut visible n’est pas forcément vraie : il faut aussi <strong>enquêter sur sa source</strong>. C’est ce que tu feras dans les prochains jeux.</p>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn secondaire" id="rejouer" type="button">Rejouer</button>
+      <a class="btn" href="../jeu2/">Jeu suivant : Le fil d’actu</a>
+    </div>
+  </section>
+</main>
+
+<script src="../../commun/progression.js"></script>
+<script>
+  const MISSION = "mission4", CLE = "jeu1";
+  // x, y : centre de la zone en % de l’image ; r : taille en % de la largeur
+  const ZONES = [
+    { nom: "Le logo du micro", x: 50.7, y: 47.5, r: 3.8, indice: true, e: "Le texte du logo est fait de lettres déformées qui ne veulent rien dire. Les IA ont souvent du mal avec les textes." },
+    { nom: "La main qui tient le micro", x: 49.5, y: 60.5, r: 4.8, indice: true, e: "Regarde bien : cinq doigts sont enroulés autour du micro, et le pouce a disparu. Une vraie main n’est pas faite comme ça." },
+    { nom: "L’horloge du clocher", x: 25.4, y: 16.8, r: 6, indice: true, e: "L’horloge a beaucoup trop d’aiguilles, toutes tordues. Les IA déforment souvent les objets précis comme les horloges." },
+    { nom: "Le reflet dans l’eau", x: 23.2, y: 84, r: 7, indice: true, e: "Ce reflet rouge flotte au milieu de la route, loin de la journaliste : il ne correspond à rien. Un reflet impossible." },
+    { nom: "L’ombre sur le sol", x: 80, y: 85.5, r: 9, indice: true, e: "Le ciel est couvert, aucun autre objet n’a d’ombre… et pourtant une grande ombre noire part vers la droite. Elle ne colle pas avec la lumière de la scène." },
+    { nom: "Le visage de la journaliste", x: 50.5, y: 24, r: 7, indice: false },
+    { nom: "Le pont de pierre", x: 82, y: 39, r: 7, indice: false },
+    { nom: "Les voitures au loin", x: 28.5, y: 40, r: 6, indice: false },
+  ];
+  const NB_INDICES = ZONES.filter((z) => z.indice).length;
+
+  const $ = (id) => document.getElementById(id);
+  function annoncer(t) { $("annonce").textContent = ""; setTimeout(() => { $("annonce").textContent = t; }, 50); }
+  function montrer(id) { ["accueil", "partie", "fin"].forEach((s) => { $(s).hidden = s !== id; }); window.scrollTo(0, 0); }
+  function el(tag, cls, texte) { const e = document.createElement(tag); if (cls) e.className = cls; if (texte) e.textContent = texte; return e; }
+
+  let trouves, erreurs, examinees;
+
+  function demarrer() {
+    trouves = []; erreurs = 0; examinees = new Set();
+    $("erreurs").textContent = "0";
+    $("trouves").innerHTML = ""; $("aucun").hidden = false;
+    $("feedback").className = "feedback"; $("feedback").innerHTML = "";
+    $("zone-fin").hidden = true;
+    dessinerZones();
+    majCompteur();
+    montrer("partie");
+    $("titre-partie").focus();
+  }
+
+  function majCompteur() { $("compteur").textContent = "Indices trouvés : " + trouves.length + " / " + NB_INDICES; }
+
+  function dessinerZones() {
+    const scene = $("scene");
+    scene.querySelectorAll(".zone").forEach((z) => z.remove());
+    const liste = $("liste"); liste.innerHTML = "";
+    ZONES.forEach((z, i) => {
+      const b = el("button", "zone"); b.type = "button";
+      b.style.left = z.x + "%"; b.style.top = z.y + "%";
+      b.style.width = (z.r * 2) + "%"; b.style.aspectRatio = "1";
+      b.setAttribute("aria-label", "Examiner : " + z.nom.toLowerCase());
+      b.addEventListener("click", () => examiner(i));
+      scene.append(b);
+      const li = el("li"); const bl = el("button", null, z.nom); bl.type = "button";
+      bl.addEventListener("click", () => examiner(i));
+      li.append(bl); liste.append(li);
+    });
+  }
+
+  function examiner(i) {
+    if (examinees.has(i)) return;
+    examinees.add(i);
+    const z = ZONES[i];
+    const b = $("scene").querySelectorAll(".zone")[i];
+    b.disabled = true; $("liste").querySelectorAll("button")[i].disabled = true;
+    const fb = $("feedback"); fb.innerHTML = "";
+    if (z.indice) {
+      trouves.push(i);
+      b.classList.add("trouve"); b.append(el("span", "num", String(trouves.length)));
+      $("aucun").hidden = true;
+      const li = el("li"); li.append(el("strong", null, z.nom + " : "), z.e); $("trouves").append(li);
+      fb.className = "feedback bon";
+      const v = el("p"); v.append(el("span", "verdict", "Indice trouvé ! "), z.e); fb.append(v);
+      majCompteur();
+      if (trouves.length === NB_INDICES) {
+        fb.append(el("p", null, "Tu as trouvé les 5 indices !"));
+        $("zone-fin").hidden = false;
+      }
+    } else {
+      erreurs++; $("erreurs").textContent = erreurs;
+      b.classList.add("rien");
+      fb.className = "feedback faux";
+      const v = el("p"); v.append(el("span", "verdict", "Rien de bizarre ici. "), z.nom + " a l’air normal. Regarde plutôt les mains, les textes, les objets précis, les ombres et les reflets.");
+      fb.append(v);
+    }
+    fb.focus(); annoncer(fb.textContent);
+  }
+
+  // Clic sur l’image en dehors des zones : rien de suspect
+  $("scene").addEventListener("click", (e) => {
+    if (e.target.closest(".zone")) return;
+    const fb = $("feedback"); fb.innerHTML = "";
+    fb.className = "feedback info";
+    fb.append(el("p", null, "Rien de particulier à cet endroit. Cherche les mains, les textes, les objets précis, les ombres et les reflets."));
+    annoncer(fb.textContent);
+  });
+
+  function terminer() {
+    const total = NB_INDICES;
+    const points = Math.max(0, total - erreurs);
+    const nb = Progression.etoiles(points, total);
+    Progression.enregistrer(MISSION, CLE, { points, total, etoiles: nb });
+    Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+    $("etoiles").innerHTML = [1, 2, 3].map((i) => '<span class="' + (i <= nb ? "pleine" : "vide") + '">★</span>').join("");
+    $("score-final").textContent = "5 indices trouvés avec " + erreurs + " erreur" + (erreurs > 1 ? "s" : "") + " · " + nb + " étoile" + (nb > 1 ? "s" : "") + " sur 3";
+    $("message-final").textContent = nb === 3
+      ? "Excellent ! Tu as l’œil d’un vrai détective de l’image."
+      : nb === 2 ? "Bien joué ! Relis le résumé : mains, textes, objets, ombres, reflets."
+      : "Tu as trouvé tous les indices, bravo pour ta persévérance ! Rejoue si tu veux gagner plus d’étoiles.";
+    montrer("fin"); $("titre-fin").focus();
+    annoncer("Jeu terminé. " + $("score-final").textContent);
+  }
+
+  $("commencer").addEventListener("click", demarrer);
+  $("voir-resultat").addEventListener("click", terminer);
+  $("rejouer").addEventListener("click", demarrer);
+  Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+</script>
+</body>
+</html>
