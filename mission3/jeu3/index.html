@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeu 3 – Répare la base · Mission 3 · Le Voyage de Noah</title>
+<link rel="stylesheet" href="../../commun/labyrinthe.css">
+<style>
+  .etapes-jeu { display: flex; gap: 8px; margin: 0 0 14px; padding: 0; list-style: none; flex-wrap: wrap; }
+  .etapes-jeu li { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--bord); color: var(--texte-doux); font-weight: 600; font-size: 14px; }
+  .etapes-jeu li[aria-current="step"] { border-color: var(--cyan); color: var(--texte); background: rgba(142,202,230,.15); }
+  .etapes-jeu li.faite { border-color: var(--neon); color: var(--neon); }
+
+  /* Jauge globale */
+  .jauge-globale { position: sticky; top: 0; z-index: 2; background: rgba(10,11,36,.95); border: 2px solid var(--bord); border-radius: 14px; padding: 10px 14px; margin: 0 0 14px; }
+  .jauge-globale .ligne { display: flex; justify-content: space-between; font-weight: 800; margin: 0 0 6px; }
+  .jauge { height: 16px; border-radius: 8px; background: rgba(255,255,255,.08); overflow: hidden; }
+  .jauge span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--cyan), var(--neon)); transition: width .4s; }
+
+  .metiers { display: grid; gap: 14px; }
+  .metier { border: 2px solid var(--bord); border-radius: 14px; padding: 14px 16px; background: rgba(18,20,59,.7); }
+  .metier.equilibre { border-color: var(--neon); box-shadow: 0 0 16px rgba(91,227,166,.25); }
+  .metier .haut { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 8px; }
+  .metier h3 { margin: 0; }
+  .badge { font-size: 13px; font-weight: 800; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--rose); color: var(--rose); }
+  .metier.equilibre .badge { border-color: var(--neon); color: var(--neon); }
+  .corps { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  @media (max-width: 760px) { .corps { grid-template-columns: 1fr; } }
+  .curseur { margin: 0 0 12px; }
+  .curseur label { display: flex; justify-content: space-between; font-weight: 600; margin: 0 0 4px; }
+  .curseur output { font-weight: 800; color: var(--cyan); }
+  .curseur input[type="range"] { width: 100%; accent-color: var(--cyan); height: 28px; }
+  .zone { position: relative; height: 6px; border-radius: 3px; background: rgba(255,255,255,.08); margin-top: -4px; }
+  .zone span { position: absolute; left: 30%; width: 40%; height: 100%; border-radius: 3px; background: rgba(91,227,166,.45); }
+  .alerte { font-size: 14px; margin: 4px 0 0; min-height: 1.2em; }
+  .alerte.trop { color: var(--ambre); font-weight: 800; }
+  .alerte.peu { color: var(--texte-doux); }
+  .alerte.ok { color: var(--neon); font-weight: 800; }
+  .mini-galerie { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .mini-galerie svg { width: 100%; height: auto; border-radius: 4px; border: 3px solid #8A6A2F; display: block; }
+  .legende { font-size: 13px; color: var(--texte-doux); margin: 4px 0 0; text-align: center; }
+
+  .question-bloc { border: 2px solid var(--bord); border-radius: 12px; padding: 12px 14px; margin: 0 0 12px; }
+  .question-bloc fieldset { border: 0; padding: 0; margin: 0; }
+  .question-bloc legend { font-weight: 800; margin: 0 0 8px; padding: 0; }
+  .question-bloc label { display: flex; gap: 8px; align-items: flex-start; padding: 6px 4px; cursor: pointer; }
+  .question-bloc input { margin-top: 4px; accent-color: var(--neon); }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <p class="fil">Le Voyage de Noah · Chapitre 3 · Mission 3 : La galerie des portraits</p>
+  <nav class="couloir" id="couloir" aria-label="Progression dans la mission"></nav>
+</div>
+
+<main>
+  <p class="sr-only" id="annonce" aria-live="polite"></p>
+
+  <!-- ========== ACCUEIL ========== -->
+  <section id="accueil" aria-labelledby="titre-jeu">
+    <div class="banniere">
+      <img src="../../commun/labyrinthe.jpg" alt="">
+      <span class="credit">Image réalisée avec une intelligence artificielle</span>
+      <div class="texte">
+        <h1 id="titre-jeu" tabindex="-1">Jeu 3 : Répare la base</h1>
+        <p class="objectif">Objectif : corriger les données d’entraînement pour que la galerie représente tout le monde.</p>
+        <p class="duree">Durée : 7 min · Évaluation de la mission</p>
+      </div>
+    </div>
+
+    <div class="noah">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle"><strong>Noah :</strong> « La porte de sortie de la galerie est bloquée : elle ne s’ouvrira que quand la galerie sera équilibrée. Si on répare les données, l’IA peindra enfin tout le monde ! »</p>
+    </div>
+
+    <div class="consigne">
+      <h2>Consigne</h2>
+      <p><strong>Partie 1</strong> : pour chaque métier, règle les curseurs pour rééquilibrer les données d’entraînement. Les portraits changent en direct. Un métier est réparé quand tous ses curseurs sont dans la <strong>zone verte (entre 30 et 70 %)</strong>. <strong>Partie 2</strong> : réponds à 3 questions pour expliquer ce que tu as fait. Pour réussir la mission : la galerie équilibrée à 100 % et au moins <strong>2 bonnes réponses sur 3</strong>.</p>
+    </div>
+
+    <div class="memo">
+      <strong>Une galerie équilibrée</strong>, ce n’est pas forcément 50 / 50 partout : c’est une galerie où <strong>tous les profils sont représentés</strong>. Attention à ne pas créer un nouveau stéréotype en allant trop loin dans l’autre sens !
+    </div>
+
+    <div class="actions centre">
+      <button class="btn" id="commencer" type="button">Ouvrir la salle des données</button>
+    </div>
+  </section>
+
+  <!-- ========== PARTIE ========== -->
+  <section id="partie" aria-labelledby="titre-partie" hidden>
+    <h2 id="titre-partie" tabindex="-1" class="sr-only">Répare la base</h2>
+    <ol class="etapes-jeu" aria-label="Étapes du jeu">
+      <li id="etape-1" aria-current="step">Partie 1 : Réparer</li>
+      <li id="etape-2">Partie 2 : Justifier</li>
+    </ol>
+
+    <div id="bloc-reparer">
+      <div class="jauge-globale">
+        <p class="ligne"><span>Galerie équilibrée</span><span id="pct">0 %</span></p>
+        <div class="jauge" role="progressbar" aria-label="Galerie équilibrée" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="jauge"><span id="jauge-remplie"></span></div>
+      </div>
+      <div class="metiers" id="metiers"></div>
+      <div class="feedback" id="feedback-1" tabindex="-1"></div>
+      <div class="actions centre" id="zone-partie2" hidden>
+        <button class="btn" id="vers-partie2" type="button">Passer à la partie 2 : justifier</button>
+      </div>
+    </div>
+
+    <form id="bloc-justifier" hidden novalidate>
+      <h3 id="titre-justifier" tabindex="-1">Explique ce que tu as fait</h3>
+      <div id="questions"></div>
+      <div class="actions"><button class="btn" type="submit">Vérifier mes réponses</button></div>
+      <div class="feedback" id="feedback-2" tabindex="-1"></div>
+    </form>
+  </section>
+
+  <!-- ========== FIN DU JEU ========== -->
+  <section id="fin" class="fin" aria-labelledby="titre-fin" hidden>
+    <h2 id="titre-fin" tabindex="-1">Galerie réparée : la porte s’ouvre !</h2>
+    <p class="score-grand" style="color:var(--neon)">Évaluation de la mission : réussie</p>
+    <p class="etoiles" id="etoiles" aria-hidden="true"></p>
+    <p class="score-grand" id="score-final"></p>
+    <div class="noah" style="max-width:720px;margin:0 auto">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle" style="text-align:left"><strong>Noah :</strong> « Regarde la galerie maintenant : des femmes et des hommes, des jeunes et des moins jeunes, toutes les couleurs de peau. L’IA n’a pas changé… ce sont ses données qui ont changé ! »</p>
+    </div>
+
+    <div class="verre">
+      <h3>Ce que tu as appris</h3>
+      <p style="margin:0 0 8px">Pour réduire les biais d’une IA, il faut <strong>rééquilibrer ses données</strong> : ce sont les humains qui les choisissent, donc ce sont eux qui peuvent les corriger.</p>
+      <p style="margin:0">Mais attention : aller trop loin dans l’autre sens crée un nouveau stéréotype, et même une IA « réparée » peut encore se tromper. Le bon réflexe reste de <strong>regarder ce qu’elle produit</strong> et de se demander : « Qui manque ? »</p>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn secondaire" id="rejouer" type="button">Rejouer</button>
+      <a class="btn" href="../jeu4/">Jeu suivant : Le bon prompt</a>
+    </div>
+  </section>
+</main>
+
+<script src="../../commun/progression.js"></script>
+<script src="../../commun/portraits.js"></script>
+<script>
+  const MISSION = "mission3", CLE = "jeu3";
+  const MIN = 30, MAX = 70;
+  const PERM_A = [5, 0, 3, 6, 1, 7, 2, 4];
+  const PERM_B = [2, 6, 0, 4, 7, 1, 5, 3];
+  const PERM_C = [7, 3, 5, 1, 0, 6, 4, 2];
+
+  // type : "femmes" | "hommes" | "peauNonClaire" | "peauClaireMate" | "age30"
+  const METIERS = [
+    { nom: "Piloter un avion", tenue: "pilote", ages: [29, 54, 38, 47, 33, 58, 42, 36],
+      curseurs: [{ type: "femmes", label: "Femmes", depart: 10 }, { type: "peauNonClaire", label: "Peaux non claires", depart: 15 }] },
+    { nom: "Diriger une entreprise", tenue: "costume", ages: [35, 58, 44, 62, 39, 51, 47, 56],
+      curseurs: [{ type: "femmes", label: "Femmes", depart: 10 }, { type: "peauNonClaire", label: "Peaux non claires", depart: 10 }] },
+    { nom: "Faire le ménage", tenue: "tablier", ages: [27, 45, 38, 52, 31, 48, 35, 58],
+      curseurs: [{ type: "hommes", label: "Hommes", depart: 15 }, { type: "peauClaireMate", label: "Peaux claires ou mates", depart: 20 }] },
+    { nom: "Créer des jeux vidéo", tenue: "sweat", ages: [22, 25, 27, 23, 26, 24, 28, 21],
+      curseurs: [{ type: "femmes", label: "Femmes", depart: 10 }, { type: "age30", label: "30 ans et plus", depart: 10 }, { type: "peauNonClaire", label: "Peaux non claires", depart: 15 }] },
+  ];
+
+  const QUESTIONS = [
+    { q: "Si on met 100 % de femmes pilotes, la galerie est-elle équilibrée ?",
+      choix: ["Oui, on a corrigé le stéréotype.", "Non : on crée un nouveau stéréotype, il faut que tous les profils soient représentés.", "Oui, si toutes les couleurs de peau sont là."], bonne: 1,
+      e: "100 % de femmes, c’est un nouveau déséquilibre. Une galerie équilibrée représente tous les profils." },
+    { q: "Qui peut corriger les données d’une IA ?",
+      choix: ["L’IA elle-même, quand elle se rend compte de son erreur.", "Les humains qui la conçoivent et choisissent ses données.", "Personne : les données ne se modifient pas."], bonne: 1,
+      e: "Une IA ne se rend compte de rien : elle exécute. Ce sont les humains qui choisissent ses données, donc ce sont eux qui peuvent les corriger." },
+    { q: "Une fois la base réparée, l’IA ne fera plus jamais d’erreur ?",
+      choix: ["Vrai, la base est parfaite.", "Vrai, si on a mis 50 % partout.", "Faux : il faut toujours regarder ce qu’elle produit et se demander qui manque."], bonne: 2,
+      e: "Aucune base n’est parfaite : le bon réflexe reste de regarder ce que l’IA produit." },
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  function annoncer(t) { $("annonce").textContent = ""; setTimeout(() => { $("annonce").textContent = t; }, 50); }
+  function montrer(id) { ["accueil", "partie", "fin"].forEach((s) => { $(s).hidden = s !== id; }); window.scrollTo(0, 0); }
+  function el(tag, cls, texte) { const e = document.createElement(tag); if (cls) e.className = cls; if (texte) e.textContent = texte; return e; }
+
+  let valeurs, dejaEquilibres, points2, premierEnvoi;
+
+  // Construit les 8 portraits d’un métier à partir des curseurs
+  function portraits(m, v) {
+    const nb = (pct) => Math.round(pct / 100 * 8);
+    return m.ages.map((ageBase, i) => {
+      let genre = "H", peau = [0, 1][i % 2], age = ageBase;
+      m.curseurs.forEach((c, j) => {
+        const n = nb(v[j]);
+        if (c.type === "femmes") genre = PERM_A.indexOf(i) < n ? "F" : "H";
+        if (c.type === "hommes") genre = PERM_A.indexOf(i) < n ? "H" : "F";
+        if (c.type === "peauNonClaire") peau = PERM_B.indexOf(i) < n ? [2, 3, 4, 5][i % 4] : [0, 1][i % 2];
+        if (c.type === "peauClaireMate") peau = PERM_B.indexOf(i) < n ? [0, 1, 2][i % 3] : [4, 5][i % 2];
+        if (c.type === "age30") age = PERM_C.indexOf(i) < n ? [34, 41, 52, 38, 45, 60, 36, 48][i] : ageBase;
+      });
+      return { genre, age, peau, tenue: m.tenue };
+    });
+  }
+
+  function equilibre(i) { return valeurs[i].every((x) => x >= MIN && x <= MAX); }
+
+  function demarrer() {
+    valeurs = METIERS.map((m) => m.curseurs.map((c) => c.depart));
+    dejaEquilibres = new Set(); points2 = null; premierEnvoi = true;
+    $("bloc-reparer").hidden = false; $("bloc-justifier").hidden = true; $("zone-partie2").hidden = true;
+    $("feedback-1").className = "feedback"; $("feedback-1").innerHTML = "";
+    $("etape-1").setAttribute("aria-current", "step"); $("etape-1").classList.remove("faite"); $("etape-2").removeAttribute("aria-current");
+    dessinerMetiers();
+    majJauge();
+    montrer("partie");
+    $("titre-partie").focus();
+  }
+
+  function dessinerMetiers() {
+    const z = $("metiers"); z.innerHTML = "";
+    METIERS.forEach((m, i) => {
+      const art = el("article", "metier"); art.id = "metier-" + i;
+      const haut = el("div", "haut");
+      haut.append(el("h3", null, m.nom), el("span", "badge", "Déséquilibré"));
+      const corps = el("div", "corps");
+      const reglages = el("div");
+      m.curseurs.forEach((c, j) => {
+        const id = "c-" + i + "-" + j;
+        const bloc = el("div", "curseur");
+        const lab = el("label"); lab.htmlFor = id;
+        const out = el("output"); out.id = "o-" + i + "-" + j; out.htmlFor = id;
+        lab.append(el("span", null, c.label + " dans les données"), out);
+        const r = el("input"); r.type = "range"; r.id = id; r.min = 0; r.max = 100; r.step = 5; r.value = valeurs[i][j];
+        r.addEventListener("input", () => { valeurs[i][j] = Number(r.value); majMetier(i); majJauge(); });
+        r.addEventListener("change", () => annoncerMetier(i, j));
+        const zone = el("div", "zone"); zone.setAttribute("aria-hidden", "true"); zone.append(el("span"));
+        const alerte = el("p", "alerte"); alerte.id = "a-" + i + "-" + j;
+        bloc.append(lab, r, zone, alerte);
+        reglages.append(bloc);
+      });
+      const droite = el("div");
+      const g = el("div", "mini-galerie"); g.id = "g-" + i; g.setAttribute("aria-hidden", "true");
+      droite.append(g, el("p", "legende", "Portraits générés avec ces données"));
+      corps.append(reglages, droite);
+      art.append(haut, corps);
+      z.append(art);
+      majMetier(i);
+    });
+  }
+
+  function majMetier(i) {
+    const m = METIERS[i];
+    m.curseurs.forEach((c, j) => {
+      const v = valeurs[i][j];
+      $("o-" + i + "-" + j).textContent = v + " %";
+      const a = $("a-" + i + "-" + j);
+      if (v > MAX) { a.className = "alerte trop"; a.textContent = "Attention, tu crées un nouveau déséquilibre !"; }
+      else if (v < MIN) { a.className = "alerte peu"; a.textContent = "Encore trop peu : ces personnes sont presque absentes."; }
+      else { a.className = "alerte ok"; a.textContent = "Dans la zone équilibrée."; }
+    });
+    const g = $("g-" + i); g.innerHTML = "";
+    portraits(m, valeurs[i]).forEach((p, k) => g.append(Portraits.svg(p, k + i * 5)));
+    const ok = equilibre(i);
+    const art = $("metier-" + i);
+    art.classList.toggle("equilibre", ok);
+    art.querySelector(".badge").textContent = ok ? "Équilibré ✓" : "Déséquilibré";
+    if (ok) dejaEquilibres.add(i);
+  }
+
+  function annoncerMetier(i, j) {
+    const m = METIERS[i], v = valeurs[i][j];
+    annoncer(m.curseurs[j].label + " : " + v + " %. " + $("a-" + i + "-" + j).textContent + (equilibre(i) ? " Le métier " + m.nom + " est équilibré." : ""));
+  }
+
+  function majJauge() {
+    const n = METIERS.filter((_, i) => equilibre(i)).length;
+    const pct = n * 25;
+    $("pct").textContent = pct + " %";
+    $("jauge-remplie").style.width = pct + "%";
+    $("jauge").setAttribute("aria-valuenow", String(pct));
+    const fb = $("feedback-1");
+    if (n === METIERS.length) {
+      if ($("zone-partie2").hidden) {
+        fb.className = "feedback bon"; fb.innerHTML = "";
+        const v = el("p"); v.append(el("span", "verdict", "Galerie équilibrée à 100 % ! "), "Tous les profils sont maintenant représentés. Passe à la partie 2 pour expliquer ce que tu as fait.");
+        fb.append(v);
+        $("zone-partie2").hidden = false;
+        annoncer(fb.textContent);
+      }
+    } else {
+      fb.className = "feedback"; fb.innerHTML = "";
+      $("zone-partie2").hidden = true;
+    }
+  }
+
+  /* ---------- Partie 2 ---------- */
+  function allerJustifier() {
+    $("bloc-reparer").hidden = true; $("bloc-justifier").hidden = false;
+    $("etape-1").removeAttribute("aria-current"); $("etape-1").classList.add("faite"); $("etape-2").setAttribute("aria-current", "step");
+    const z = $("questions"); z.innerHTML = "";
+    QUESTIONS.forEach((q, i) => {
+      const bloc = el("div", "question-bloc");
+      const fs = el("fieldset");
+      fs.append(el("legend", null, (i + 1) + ". " + q.q));
+      q.choix.forEach((t, k) => {
+        const lab = el("label"); const r = el("input"); r.type = "radio"; r.name = "q" + i; r.value = String(k);
+        lab.append(r, el("span", null, t)); fs.append(lab);
+      });
+      const fb = el("div", "feedback"); fb.id = "fb-q" + i;
+      bloc.append(fs, fb); z.append(bloc);
+    });
+    $("feedback-2").className = "feedback"; $("feedback-2").innerHTML = "";
+    window.scrollTo(0, 0);
+    $("titre-justifier").focus();
+  }
+
+  function verifier(e) {
+    e.preventDefault();
+    let justes = 0, vides = 0;
+    QUESTIONS.forEach((q, i) => {
+      const c = document.querySelector('input[name="q' + i + '"]:checked');
+      const fb = $("fb-q" + i); fb.innerHTML = "";
+      if (!c) { vides++; fb.className = "feedback info"; fb.append(el("p", null, "Choisis une réponse.")); return; }
+      if (Number(c.value) === q.bonne) { justes++; fb.className = "feedback bon"; const v = el("p"); v.append(el("span", "verdict", "Juste. "), q.e); fb.append(v); }
+      else { fb.className = "feedback faux"; const v = el("p"); v.append(el("span", "verdict", "Pas encore. "), "Repense à ce que tu as vu avec les curseurs."); fb.append(v); }
+    });
+    const fbG = $("feedback-2"); fbG.innerHTML = "";
+    if (vides) { fbG.className = "feedback info"; fbG.append(el("p", null, "Réponds aux 3 questions avant de vérifier.")); fbG.focus(); return; }
+    if (premierEnvoi) { points2 = justes; premierEnvoi = false; }
+    if (justes >= 2) { terminer(); return; }
+    fbG.className = "feedback faux";
+    const v = el("p"); v.append(el("span", "verdict", justes + " bonne" + (justes > 1 ? "s réponses" : " réponse") + " sur 3. "), "Il en faut au moins 2. Relis le mémo de l’accueil et les messages des curseurs, puis change tes réponses et vérifie à nouveau.");
+    fbG.append(v); fbG.focus(); annoncer(fbG.textContent);
+  }
+
+  function terminer() {
+    const points = METIERS.length + points2, total = METIERS.length + QUESTIONS.length;
+    const nb = Progression.etoiles(points, total);
+    Progression.enregistrer(MISSION, CLE, { points, total, etoiles: nb, reussi: true });
+    Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+    $("etoiles").innerHTML = [1, 2, 3].map((i) => '<span class="' + (i <= nb ? "pleine" : "vide") + '">★</span>').join("");
+    $("score-final").textContent = points + " points sur " + total + " (galerie : 4/4, justification : " + points2 + "/3) · " + nb + " étoile" + (nb > 1 ? "s" : "") + " sur 3";
+    montrer("fin"); $("titre-fin").focus();
+    annoncer("Mission réussie. " + $("score-final").textContent);
+  }
+
+  $("commencer").addEventListener("click", demarrer);
+  $("vers-partie2").addEventListener("click", allerJustifier);
+  $("bloc-justifier").addEventListener("submit", verifier);
+  $("rejouer").addEventListener("click", demarrer);
+  Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+</script>
+</body>
+</html>
