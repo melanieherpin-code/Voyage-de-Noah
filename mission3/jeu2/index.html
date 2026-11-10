@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeu 2 – D’où vient le biais ? · Mission 3 · Le Voyage de Noah</title>
+<link rel="stylesheet" href="../../commun/labyrinthe.css">
+<style>
+  .infos-partie { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--texte-doux); font-weight: 600; margin-bottom: 14px; }
+  .infos-partie strong { color: var(--texte); }
+  .etapes-jeu { display: flex; gap: 8px; margin: 0 0 14px; padding: 0; list-style: none; flex-wrap: wrap; }
+  .etapes-jeu li { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--bord); color: var(--texte-doux); font-weight: 600; font-size: 14px; }
+  .etapes-jeu li[aria-current="step"] { border-color: var(--cyan); color: var(--texte); background: rgba(142,202,230,.15); }
+  .etapes-jeu li.faite { border-color: var(--neon); color: var(--neon); }
+
+  .dossiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0 0 14px; }
+  @media (max-width: 640px) { .dossiers { grid-template-columns: 1fr; } }
+  .dossier { font: inherit; color: var(--texte); text-align: left; cursor: pointer; background: rgba(255,200,87,.08); border: 2px solid var(--ambre); border-radius: 4px 14px 14px 14px; padding: 12px 14px; }
+  .dossier .etiquette { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--ambre); font-weight: 800; }
+  .dossier strong { display: block; font-size: 17px; }
+  .dossier .etat { display: block; font-size: 13px; font-weight: 800; margin-top: 4px; color: var(--neon); }
+  .dossier[aria-pressed="true"] { box-shadow: 0 0 14px rgba(255,200,87,.5); }
+  .dossier[disabled] { cursor: default; opacity: .7; }
+
+  .base { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin: 8px 0 12px; }
+  @media (max-width: 640px) { .base { grid-template-columns: repeat(5, 1fr); } }
+  .base svg { width: 100%; height: auto; border-radius: 4px; display: block; }
+  .repartition { display: grid; gap: 10px; margin: 0 0 6px; }
+  .critere h4 { margin: 0 0 4px; font-size: 14px; text-transform: uppercase; letter-spacing: .05em; color: var(--cyan); }
+  .barre-double { display: flex; height: 26px; border-radius: 6px; overflow: hidden; font-size: 13px; font-weight: 800; }
+  .barre-double span { display: flex; align-items: center; padding: 0 8px; white-space: nowrap; overflow: hidden; }
+  .barre-double .a { background: var(--violet); color: var(--nuit); }
+  .barre-double .b { background: rgba(255,255,255,.18); color: var(--texte); }
+  .fictif { font-size: 13px; color: var(--ambre); margin: 6px 0 12px; }
+  .reponses { display: grid; gap: 8px; margin-top: 8px; }
+  .reponse { font: inherit; text-align: left; color: var(--texte); cursor: pointer; background: rgba(255,255,255,.05); border: 2px solid var(--bord); border-radius: 10px; padding: 10px 12px; }
+  .reponse:hover:not([disabled]) { border-color: var(--cyan); background: rgba(142,202,230,.12); }
+  .reponse[disabled] { cursor: default; opacity: .6; }
+  .reponse.bonne { opacity: 1; border-color: var(--neon); background: rgba(91,227,166,.12); }
+
+  .chaine { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 8px; counter-reset: etape; }
+  .maillon { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; border: 2px solid var(--bord); border-radius: 12px; padding: 10px 12px; background: rgba(18,20,59,.7); }
+  .maillon::before { counter-increment: etape; content: counter(etape); width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; background: rgba(142,202,230,.2); }
+  .maillon.juste { border-color: var(--neon); }
+  .maillon .fleches { display: flex; gap: 6px; }
+  .maillon .fleches button { font: inherit; font-weight: 800; width: 38px; height: 38px; border-radius: 8px; border: 2px solid var(--cyan); background: transparent; color: var(--cyan); cursor: pointer; }
+  .maillon .fleches button[disabled] { opacity: .3; cursor: default; }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <p class="fil">Le Voyage de Noah · Chapitre 3 · Mission 3 : La galerie des portraits</p>
+  <nav class="couloir" id="couloir" aria-label="Progression dans la mission"></nav>
+</div>
+
+<main>
+  <p class="sr-only" id="annonce" aria-live="polite"></p>
+
+  <!-- ========== ACCUEIL ========== -->
+  <section id="accueil" aria-labelledby="titre-jeu">
+    <div class="banniere">
+      <img src="../../commun/labyrinthe.jpg" alt="">
+      <span class="credit">Image réalisée avec une intelligence artificielle</span>
+      <div class="texte">
+        <h1 id="titre-jeu" tabindex="-1">Jeu 2 : D’où vient le biais ?</h1>
+        <p class="objectif">Objectif : comprendre comment les stéréotypes humains passent dans une IA.</p>
+        <p class="duree">Durée : 5 min</p>
+      </div>
+    </div>
+
+    <div class="noah">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle"><strong>Noah :</strong> « Derrière la galerie, j’ai trouvé une salle d’archives : ce sont les images avec lesquelles l’IA a appris à peindre ! Ouvrons les dossiers pour comprendre d’où viennent ses stéréotypes. »</p>
+    </div>
+
+    <div class="consigne">
+      <h2>Consigne</h2>
+      <p><strong>Partie 1</strong> : ouvre les 3 dossiers de la base d’entraînement. Observe les images, puis explique pourquoi l’IA a généré ces portraits. <strong>Partie 2</strong> : remets dans l’ordre la chaîne qui mène d’un stéréotype humain à une image d’IA.</p>
+    </div>
+
+    <div class="memo">
+      <strong>Les données d’entraînement</strong>, ce sont les millions d’images et de textes qu’une IA a analysés pour apprendre. C’est son <strong>entrée</strong> : elle ne sait rien d’autre que ce qu’elles contiennent.
+    </div>
+
+    <div class="actions centre">
+      <button class="btn" id="commencer" type="button">Entrer dans les archives</button>
+    </div>
+  </section>
+
+  <!-- ========== PARTIE ========== -->
+  <section id="partie" aria-labelledby="titre-partie" hidden>
+    <h2 id="titre-partie" tabindex="-1" class="sr-only">Les archives de l’IA</h2>
+    <ol class="etapes-jeu" aria-label="Étapes du jeu">
+      <li id="etape-1" aria-current="step">Partie 1 : Les dossiers</li>
+      <li id="etape-2">Partie 2 : La chaîne</li>
+    </ol>
+    <div class="infos-partie">
+      <span id="compteur"></span>
+      <span>Points : <strong id="points">0</strong> / 5</span>
+    </div>
+
+    <!-- Partie 1 -->
+    <div id="bloc-dossiers">
+      <div class="dossiers" id="dossiers"></div>
+      <div class="verre" id="panneau" aria-live="polite">
+        <p style="margin:0;color:var(--texte-doux)">Ouvre un dossier pour voir les images d’entraînement.</p>
+      </div>
+      <div class="actions centre" id="zone-partie2" hidden>
+        <button class="btn" id="vers-partie2" type="button">Passer à la partie 2 : la chaîne</button>
+      </div>
+    </div>
+
+    <!-- Partie 2 -->
+    <div id="bloc-chaine" hidden>
+      <div class="verre">
+        <h3 id="titre-chaine" tabindex="-1">Comment un stéréotype humain arrive-t-il dans une image d’IA ?</h3>
+        <p style="margin:0">Remets les étapes dans l’ordre avec les flèches ↑ et ↓, puis vérifie.</p>
+        <ol class="chaine" id="chaine"></ol>
+        <div class="actions"><button class="btn" id="verifier-chaine" type="button">Vérifier l’ordre</button></div>
+        <div class="feedback" id="feedback-chaine" tabindex="-1"></div>
+        <div class="actions" id="zone-fin" hidden><button class="btn" id="voir-resultat" type="button">Voir mon résultat</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FIN DU JEU ========== -->
+  <section id="fin" class="fin" aria-labelledby="titre-fin" hidden>
+    <h2 id="titre-fin" tabindex="-1">Porte ouverte !</h2>
+    <p class="etoiles" id="etoiles" aria-hidden="true"></p>
+    <p class="score-grand" id="score-final"></p>
+    <p id="message-final"></p>
+
+    <div class="verre">
+      <h3>Ce que tu as appris</h3>
+      <p style="margin:0 0 8px">L’IA n’a pas de préjugés à elle : elle n’aime ni ne déteste personne. Mais elle apprend à partir de <strong>données créées par des humains</strong>, avec leurs stéréotypes.</p>
+      <p style="margin:0">Quand ces données sont <strong>déséquilibrées</strong> (presque que des pilotes hommes, par exemple), l’IA calcule que c’est « le plus probable »… et répète ce stéréotype dans chaque image. Elle le <strong>reproduit</strong> et peut même l’<strong>amplifier</strong>.</p>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn secondaire" id="rejouer" type="button">Rejouer</button>
+      <a class="btn" href="../jeu3/">Jeu suivant : Répare la base</a>
+    </div>
+  </section>
+</main>
+
+<script src="../../commun/progression.js"></script>
+<script src="../../commun/portraits.js"></script>
+<script>
+  const MISSION = "mission3", CLE = "jeu2";
+  const FICTIF = "Exemple simplifié : chiffres fictifs pour comprendre le principe.";
+
+  // Fabrique 20 portraits respectant les répartitions demandées
+  function base(nbHommes, peauxMajo, nbMajo, ages, tenue) {
+    const ordreGenre = [3, 11, 7, 0, 15, 5, 18, 9, 1, 13, 6, 17, 2, 10, 14, 4, 19, 8, 12, 16];
+    const ordrePeau = [8, 2, 16, 12, 0, 19, 5, 10, 14, 3, 7, 18, 1, 11, 15, 6, 9, 13, 4, 17];
+    const autres = peauxMajo[0] <= 1 ? [3, 4, 5] : [0, 1, 2];
+    return Array.from({ length: 20 }, (_, i) => {
+      const genre = ordreGenre.indexOf(i) < nbHommes ? "H" : "F";
+      const rangPeau = ordrePeau.indexOf(i);
+      const peau = rangPeau < nbMajo ? peauxMajo[i % peauxMajo.length] : autres[i % autres.length];
+      return { genre, age: ages[i % ages.length], peau, tenue };
+    });
+  }
+
+  const DOSSIERS = [
+    { nom: "Piloter un avion", tenue: "pilote",
+      portraits: base(18, [0, 1], 17, [29, 54, 38, 47, 33, 58, 42, 36, 45, 31], "pilote"),
+      criteres: [["Genre", "Hommes", 18, "Femmes", 2], ["Couleur de peau", "Peau claire", 17, "Autres", 3]],
+      choix: ["L’IA a décidé que les femmes ne pilotent pas.", "Dans ses données, presque toutes les images de pilotes montraient des hommes à la peau claire.", "L’IA a fait une erreur de calcul."], bonne: 1,
+      e: "L’IA ne décide rien : elle a calculé ce qui revenait le plus souvent dans ses données. Presque que des hommes à la peau claire en entrée… donc presque que des hommes à la peau claire en sortie." },
+    { nom: "Faire le ménage", tenue: "tablier",
+      portraits: base(3, [4, 5], 16, [27, 45, 38, 52, 31, 48, 35, 58, 41, 29], "tablier"),
+      criteres: [["Genre", "Femmes", 17, "Hommes", 3], ["Couleur de peau", "Peau foncée", 16, "Autres", 4]],
+      choix: ["Dans ses données, les images de ménage montraient surtout des femmes à la peau foncée.", "L’IA connaît toutes les personnes qui font le ménage.", "L’IA n’aime pas certaines personnes."], bonne: 0,
+      e: "L’IA ne connaît personne et n’aime ni ne déteste personne : elle reproduit le déséquilibre de ses données. Ce sont des humains qui ont produit ces images, avec leurs préjugés." },
+    { nom: "Créer des jeux vidéo", tenue: "sweat",
+      portraits: base(18, [0, 1], 17, [22, 25, 27, 23, 26, 24, 28, 21, 52, 29, 25, 23, 40, 26, 22, 27, 24, 28, 21, 26], "sweat"),
+      criteres: [["Genre", "Hommes", 18, "Femmes", 2], ["Âge", "Moins de 30 ans", 18, "30 ans et plus", 2], ["Couleur de peau", "Peau claire", 17, "Autres", 3]],
+      choix: ["Les jeux vidéo sont interdits aux femmes.", "L’IA a choisi ses personnes préférées.", "Les données montraient surtout de jeunes hommes à la peau claire : l’IA a reproduit ce déséquilibre."], bonne: 2,
+      e: "Trois déséquilibres dans les données, trois stéréotypes dans les images. L’IA n’a pas de « préférés » : elle génère ce qui est le plus fréquent dans ce qu’elle a appris." },
+  ];
+
+  const CHAINE = [
+    "Des humains publient des millions de photos et de textes, avec leurs propres stéréotypes.",
+    "Ces images deviennent les données d’entraînement de l’IA (entrée).",
+    "L’IA calcule ce qui revient le plus souvent (traitement).",
+    "L’IA génère les portraits les plus probables… et répète les stéréotypes (sortie).",
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  function annoncer(t) { $("annonce").textContent = ""; setTimeout(() => { $("annonce").textContent = t; }, 50); }
+  function montrer(id) { ["accueil", "partie", "fin"].forEach((s) => { $(s).hidden = s !== id; }); window.scrollTo(0, 0); }
+  function el(tag, cls, texte) { const e = document.createElement(tag); if (cls) e.className = cls; if (texte) e.textContent = texte; return e; }
+
+  let points, faits, ouvert, ratee, ordre, essaisChaine;
+
+  function demarrer() {
+    points = 0; faits = new Set(); ouvert = null;
+    $("points").textContent = "0";
+    $("bloc-dossiers").hidden = false; $("bloc-chaine").hidden = true; $("zone-partie2").hidden = true;
+    $("etape-1").setAttribute("aria-current", "step"); $("etape-1").classList.remove("faite"); $("etape-2").removeAttribute("aria-current");
+    $("panneau").innerHTML = '<p style="margin:0;color:var(--texte-doux)">Ouvre un dossier pour voir les images d’entraînement.</p>';
+    dessinerDossiers();
+    majCompteur();
+    montrer("partie");
+    $("dossiers").querySelector("button").focus();
+  }
+
+  function majCompteur() { $("compteur").textContent = "Dossiers analysés : " + faits.size + " / " + DOSSIERS.length; }
+
+  function dessinerDossiers() {
+    const z = $("dossiers"); z.innerHTML = "";
+    DOSSIERS.forEach((d, i) => {
+      const b = el("button", "dossier"); b.type = "button";
+      b.setAttribute("aria-pressed", String(ouvert === i));
+      b.append(el("span", "etiquette", "Dossier " + (i + 1)), el("strong", null, d.nom));
+      if (faits.has(i)) { b.append(el("span", "etat", "Analysé")); b.disabled = true; }
+      b.addEventListener("click", () => ouvrir(i));
+      z.append(b);
+    });
+  }
+
+  function ouvrir(i) {
+    ouvert = i; ratee = false;
+    dessinerDossiers();
+    const d = DOSSIERS[i];
+    const p = $("panneau"); p.innerHTML = "";
+    const h = el("h3", null, "Base d’entraînement : « " + d.nom + " »"); h.tabIndex = -1;
+    p.append(h, el("p", null, "Voici 20 images de cette base, parmi des milliers :"));
+    const g = el("div", "base"); g.setAttribute("aria-hidden", "true");
+    d.portraits.forEach((pt, k) => g.append(Portraits.svg(pt, k + i * 7)));
+    p.append(g);
+    const rep = el("div", "repartition");
+    d.criteres.forEach(([titre, nomA, a, nomB, b]) => {
+      const c = el("div", "critere");
+      c.append(el("h4", null, titre));
+      const barre = el("div", "barre-double");
+      barre.setAttribute("role", "img");
+      barre.setAttribute("aria-label", titre + " : " + nomA + " " + a + " sur 20, " + nomB + " " + b + " sur 20");
+      const sa = el("span", "a", nomA + " : " + a); sa.style.width = (a / 20 * 100) + "%";
+      const sb = el("span", "b", b); sb.style.width = (b / 20 * 100) + "%";
+      barre.append(sa, sb); c.append(barre); rep.append(c);
+    });
+    p.append(rep, el("p", "fictif", FICTIF));
+    const q = el("h3", null, "Pourquoi l’IA a-t-elle généré ces portraits ?"); q.id = "question-dossier";
+    const zr = el("div", "reponses"); zr.setAttribute("role", "group"); zr.setAttribute("aria-labelledby", "question-dossier");
+    const fb = el("div", "feedback"); fb.tabIndex = -1;
+    d.choix.forEach((texte, k) => {
+      const b = el("button", "reponse", texte); b.type = "button";
+      b.addEventListener("click", () => repondre(i, k, b, zr, fb));
+      zr.append(b);
+    });
+    p.append(q, zr, fb);
+    h.focus();
+    annoncer("Dossier " + d.nom + ". " + d.criteres.map(([t, na, a, nb, b]) => t + " : " + na + " " + a + " sur 20, " + nb + " " + b).join(". ") + ".");
+  }
+
+  function repondre(i, k, bouton, zr, fb) {
+    const d = DOSSIERS[i];
+    fb.innerHTML = "";
+    if (k !== d.bonne) {
+      ratee = true; bouton.disabled = true;
+      fb.className = "feedback faux";
+      const v = el("p"); v.append(el("span", "verdict", "Pas encore. "), "Une IA ne décide pas, n’aime pas et ne connaît personne. Regarde plutôt les barres : que contenaient ses données ?");
+      fb.append(v); fb.focus(); annoncer(fb.textContent); return;
+    }
+    zr.querySelectorAll("button").forEach((b) => { b.disabled = true; });
+    bouton.classList.add("bonne");
+    if (!ratee) points++;
+    faits.add(i);
+    $("points").textContent = points; majCompteur();
+    fb.className = "feedback bon";
+    const v = el("p"); v.append(el("span", "verdict", "Bien vu !" + (ratee ? "" : " +1 point")));
+    fb.append(v, el("p", null, d.e));
+    if (faits.size === DOSSIERS.length) { $("zone-partie2").hidden = false; fb.append(el("p", null, "Tu as analysé les 3 dossiers ! Passe à la partie 2.")); }
+    else fb.append(el("p", null, "Ouvre maintenant un autre dossier."));
+    dessinerDossiers();
+    fb.focus(); annoncer(fb.textContent);
+  }
+
+  /* ---------- Partie 2 : la chaîne ---------- */
+  function allerChaine() {
+    $("bloc-dossiers").hidden = true; $("bloc-chaine").hidden = false;
+    $("etape-1").removeAttribute("aria-current"); $("etape-1").classList.add("faite"); $("etape-2").setAttribute("aria-current", "step");
+    ordre = [2, 0, 3, 1]; essaisChaine = 0;
+    $("feedback-chaine").className = "feedback"; $("feedback-chaine").innerHTML = "";
+    $("zone-fin").hidden = true; $("verifier-chaine").disabled = false;
+    dessinerChaine();
+    window.scrollTo(0, 0);
+    $("titre-chaine").focus();
+  }
+
+  function dessinerChaine(fige, focusIndex, focusSens) {
+    const ol = $("chaine"); ol.innerHTML = "";
+    ordre.forEach((k, pos) => {
+      const li = el("li", "maillon" + (fige ? " juste" : ""));
+      li.append(el("span", null, CHAINE[k]));
+      const f = el("div", "fleches");
+      const haut = el("button", null, "↑"); haut.type = "button"; haut.setAttribute("aria-label", "Monter : " + CHAINE[k]);
+      const bas = el("button", null, "↓"); bas.type = "button"; bas.setAttribute("aria-label", "Descendre : " + CHAINE[k]);
+      haut.disabled = fige || pos === 0; bas.disabled = fige || pos === ordre.length - 1;
+      haut.addEventListener("click", () => deplacer(pos, -1));
+      bas.addEventListener("click", () => deplacer(pos, 1));
+      f.append(haut, bas); li.append(f); ol.append(li);
+      if (focusIndex === pos) setTimeout(() => { const b = focusSens < 0 ? haut : bas; (b.disabled ? (focusSens < 0 ? bas : haut) : b).focus(); }, 0);
+    });
+  }
+
+  function deplacer(pos, sens) {
+    const cible = pos + sens;
+    [ordre[pos], ordre[cible]] = [ordre[cible], ordre[pos]];
+    dessinerChaine(false, cible, sens);
+    annoncer("Étape déplacée en position " + (cible + 1) + ".");
+  }
+
+  function verifierChaine() {
+    essaisChaine++;
+    const fb = $("feedback-chaine"); fb.innerHTML = "";
+    const justes = ordre.filter((k, pos) => k === pos).length;
+    if (justes === CHAINE.length) {
+      const gagne = essaisChaine === 1 ? 2 : essaisChaine === 2 ? 1 : 0;
+      points += gagne; $("points").textContent = points;
+      $("verifier-chaine").disabled = true;
+      dessinerChaine(true);
+      fb.className = "feedback bon";
+      const v = el("p"); v.append(el("span", "verdict", "Chaîne complète !" + (gagne ? " +" + gagne + " point" + (gagne > 1 ? "s" : "") : "")));
+      fb.append(v, el("p", null, "Un stéréotype humain entre dans les données, l’IA calcule ce qui est le plus fréquent, et le stéréotype ressort dans les images. C’est la même chaîne qu’en mission 2 : entrée, traitement, sortie."));
+      $("zone-fin").hidden = false;
+    } else {
+      fb.className = "feedback faux";
+      const v = el("p"); v.append(el("span", "verdict", justes + " étape" + (justes > 1 ? "s" : "") + " sur 4 à la bonne place. "), "Demande-toi : qu’est-ce qui existe en premier ? Les images faites par des humains. Et qu’est-ce qui arrive à la fin ? Le portrait généré.");
+      fb.append(v);
+    }
+    fb.focus(); annoncer(fb.textContent);
+  }
+
+  function terminer() {
+    const total = 5;
+    const nb = Progression.etoiles(points, total);
+    Progression.enregistrer(MISSION, CLE, { points, total, etoiles: nb });
+    Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+    $("etoiles").innerHTML = [1, 2, 3].map((i) => '<span class="' + (i <= nb ? "pleine" : "vide") + '">★</span>').join("");
+    $("score-final").textContent = points + " points sur " + total + " · " + nb + " étoile" + (nb > 1 ? "s" : "") + " sur 3";
+    $("message-final").textContent = nb === 3
+      ? "Excellent ! Tu as compris d’où viennent les biais de l’IA. Maintenant, on peut les réparer !"
+      : nb === 2 ? "Bien joué ! Relis le résumé ci-dessous : tout part des données."
+      : "Tu as ouvert tous les dossiers, bravo pour ta persévérance ! Relis le résumé ci-dessous, puis rejoue si tu veux gagner plus d’étoiles.";
+    montrer("fin"); $("titre-fin").focus();
+    annoncer("Jeu terminé. " + $("score-final").textContent);
+  }
+
+  $("commencer").addEventListener("click", demarrer);
+  $("vers-partie2").addEventListener("click", allerChaine);
+  $("verifier-chaine").addEventListener("click", verifierChaine);
+  $("voir-resultat").addEventListener("click", terminer);
+  $("rejouer").addEventListener("click", demarrer);
+  Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+</script>
+</body>
+</html>
