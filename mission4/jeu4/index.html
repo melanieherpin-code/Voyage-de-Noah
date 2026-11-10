@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeu 4 – L’alerte du collège inondé · Mission 4 · Le Voyage de Noah</title>
+<link rel="stylesheet" href="../../commun/labyrinthe.css">
+<style>
+  .infos-partie { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--texte-doux); font-weight: 600; margin-bottom: 14px; }
+  .infos-partie strong { color: var(--texte); }
+  .verre h3 { color: var(--cyan); margin-top: 0; }
+
+  /* Écran géant */
+  .ecran-geant { max-width: 760px; margin: 0 auto; padding: 14px; border-radius: 18px; background: #05061A; border: 3px solid #3A3F6B; box-shadow: 0 0 26px rgba(255,138,138,.35); }
+  .post { background: #fff; color: #1E2140; border-radius: 12px; overflow: hidden; }
+  .post-tete { display: flex; align-items: center; gap: 10px; padding: 10px 14px; }
+  .post-tete .rond { width: 36px; height: 36px; border-radius: 50%; flex: 0 0 36px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; background: #C0392B; }
+  .post-tete strong { display: block; font-size: 15px; }
+  .post-tete span.meta { font-size: 12px; color: #6A6F8E; }
+  .post-texte { padding: 0 14px 10px; margin: 0; font-weight: 800; font-size: 18px; color: #C0392B; }
+  .post figure { margin: 0; }
+  .post img { display: block; width: 100%; height: auto; }
+  .post figcaption { font-size: 11px; color: #6A6F8E; padding: 4px 14px 0; }
+  .post-reactions { padding: 6px 14px 10px; font-size: 13px; color: #6A6F8E; }
+
+  /* Terminal */
+  .terminal { display: grid; grid-template-columns: 1fr 280px; gap: 18px; align-items: start; }
+  @media (max-width: 860px) { .terminal { grid-template-columns: 1fr; } }
+  .fenetre { background: #0B0D2A; border: 2px solid var(--bord); border-radius: 14px; overflow: hidden; }
+  .onglets { display: flex; flex-wrap: wrap; background: #151840; border-bottom: 2px solid var(--bord); }
+  .onglets button { font: inherit; font-weight: 700; color: var(--texte-doux); background: transparent; border: 0; border-right: 1px solid var(--bord); padding: 10px 16px; cursor: pointer; }
+  .onglets button[aria-selected="true"] { color: var(--nuit); background: var(--cyan); }
+  .onglets button[disabled] { opacity: .45; cursor: not-allowed; }
+  .onglets button.fait::after { content: " (vu)"; font-weight: 400; }
+  .panneau { padding: 16px; }
+  .page-web { background: #fff; color: #1E2140; border-radius: 10px; padding: 14px 16px; }
+  .page-web h4 { margin: 0 0 8px; font-size: 16px; }
+  .page-web .bandeau-ent { background: #2F6FDB; color: #fff; margin: -14px -16px 12px; padding: 10px 16px; border-radius: 10px 10px 0 0; font-weight: 800; }
+  .page-web .bloc { border: 1px solid #DDE0EE; border-radius: 8px; padding: 8px 12px; margin-top: 8px; font-size: 14px; }
+  .page-web .bloc b { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #6A6F8E; }
+  .recherche { display: flex; gap: 8px; flex-wrap: wrap; }
+  .recherche input { flex: 1; min-width: 180px; font: inherit; padding: 8px 12px; border: 2px solid #9AA0B5; border-radius: 20px; }
+  .recherche button { font: inherit; font-weight: 700; padding: 8px 16px; border: 0; border-radius: 20px; background: #2F6FDB; color: #fff; cursor: pointer; }
+  .resultat { margin-top: 10px; font-size: 14px; }
+  .resultat a, .resultat .lien { color: #1A0DAB; font-weight: 700; display: block; }
+  .resultat .url { color: #2E7D32; font-size: 12px; }
+  .resultat p { margin: 2px 0 0; }
+  .aucun-article { margin-top: 12px; padding: 8px 12px; background: #FDECEA; border-radius: 8px; font-weight: 700; color: #8B1E14; }
+  .depot-zone { display: grid; grid-template-columns: 140px 1fr; gap: 14px; align-items: center; }
+  @media (max-width: 520px) { .depot-zone { grid-template-columns: 1fr; } }
+  .vignette { width: 140px; border-radius: 8px; cursor: grab; border: 3px solid #2F6FDB; }
+  .zone-depot { min-height: 110px; border: 3px dashed #9AA0B5; border-radius: 12px; display: flex; align-items: center; justify-content: center; text-align: center; color: #6A6F8E; font-weight: 700; padding: 10px; }
+  .zone-depot.survol { border-color: #2F6FDB; background: #EAF1FD; color: #2F6FDB; }
+  #deposer[disabled] { opacity: .45; }
+  .question { margin-top: 14px; }
+  .question p.q { font-weight: 700; margin: 0 0 8px; }
+  .choix { display: flex; flex-wrap: wrap; gap: 8px; }
+  .choix button { font: inherit; color: var(--texte); cursor: pointer; background: rgba(255,255,255,.05); border: 2px solid var(--bord); border-radius: 10px; padding: 8px 14px; text-align: left; }
+  .choix button:hover:not([disabled]) { border-color: var(--cyan); background: rgba(142,202,230,.12); }
+  .choix button[disabled] { cursor: default; opacity: .6; }
+  .choix button.bonne { opacity: 1; border-color: var(--neon); background: rgba(91,227,166,.12); }
+
+  .carnet ol { margin: 8px 0 0; padding-left: 20px; }
+  .carnet li { margin-bottom: 8px; }
+  .carnet li.vide { color: var(--texte-doux); font-style: italic; }
+
+  /* Verdict */
+  .options { border: 0; padding: 0; margin: 8px 0 16px; display: grid; gap: 8px; }
+  .options legend { font-weight: 800; color: var(--cyan); margin-bottom: 8px; padding: 0; }
+  .options label { display: flex; gap: 10px; align-items: center; cursor: pointer; background: rgba(255,255,255,.05); border: 2px solid var(--bord); border-radius: 10px; padding: 8px 12px; }
+  .options input { width: 20px; height: 20px; accent-color: var(--ambre); flex: 0 0 20px; }
+  .synthese { font-size: 18px; font-weight: 800; color: var(--ambre); }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <p class="fil">Le Voyage de Noah · Chapitre 3 · Mission 4 : L’écran truqué</p>
+  <nav class="couloir" id="couloir" aria-label="Progression dans la mission"></nav>
+</div>
+
+<main>
+  <p class="sr-only" id="annonce" aria-live="polite"></p>
+
+  <!-- ========== ACCUEIL ========== -->
+  <section id="accueil" aria-labelledby="titre-jeu">
+    <div class="banniere">
+      <img src="../../commun/labyrinthe.jpg" alt="">
+      <span class="credit">Image réalisée avec une intelligence artificielle</span>
+      <div class="texte">
+        <h1 id="titre-jeu" tabindex="-1">Jeu 4 : L’alerte du collège inondé</h1>
+        <p class="objectif">Objectif : prouver qu’une image est fausse grâce à 3 outils de vérification.</p>
+        <p class="duree">Durée : 8 min</p>
+      </div>
+    </div>
+
+    <div class="noah">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle"><strong>Noah :</strong> « Un écran géant s’allume au bout du couloir… Il y a une photo de mon collège ! Je vais voir ce qui se passe. »</p>
+    </div>
+
+    <div class="consigne">
+      <h2>Consigne</h2>
+      <p>C’est l’épreuve finale de la mission. Mène l’enquête avec les <strong>3 outils du terminal</strong>, puis rends ton <strong>verdict</strong> : l’information est-elle vraie ou fausse ? Coche les preuves qui le montrent.</p>
+    </div>
+
+    <div class="memo">
+      <strong>Les 3 outils de l’enquêteur</strong>
+      <ul>
+        <li>La <strong>source officielle</strong> : le site ou l’ENT de l’établissement concerné.</li>
+        <li>La <strong>presse</strong> : est-ce que des journalistes en parlent ?</li>
+        <li>La <strong>recherche inversée</strong> : d’où vient l’image, et qui l’a publiée en premier ?</li>
+      </ul>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn" id="commencer" type="button">Regarder l’écran géant</button>
+    </div>
+  </section>
+
+  <!-- ========== PARTIE ========== -->
+  <section id="partie" aria-labelledby="titre-partie" hidden>
+    <div class="infos-partie">
+      <span id="etape-nom"></span>
+      <span>Points : <strong id="points">0</strong> / 6</span>
+    </div>
+
+    <!-- Étape 1 : l’alerte -->
+    <div id="etape-alerte">
+      <h2 id="titre-partie" tabindex="-1" class="sr-only">L’alerte</h2>
+      <div class="ecran-geant">
+        <article class="post" aria-label="Publication de @Alerte_Infos">
+          <div class="post-tete">
+            <span class="rond" aria-hidden="true">A</span>
+            <span><strong>@Alerte_Infos</strong><span class="meta">il y a 20 min</span></span>
+          </div>
+          <p class="post-texte">URGENT : le collège Jean-Moulin sous les eaux ! Partagez !</p>
+          <figure>
+            <img src="../images/college-inonde.jpg" alt="Photo très réaliste d’un collège inondé : l’eau boueuse recouvre la cour et la rue, des chaises et des cartables flottent, des pompiers sont au loin.">
+            <figcaption>Image réalisée avec une intelligence artificielle</figcaption>
+          </figure>
+          <p class="post-reactions">5 300 J’aime · 2 400 partages</p>
+        </article>
+      </div>
+
+      <div class="noah" style="margin-top:16px">
+        <div class="avatar" aria-hidden="true"></div>
+        <p class="bulle"><strong>Noah :</strong> « C’est mon collège ! Tout est inondé ! Je déclenche l’alarme du labyrinthe pour sortir et aller voir ! »</p>
+      </div>
+
+      <div class="actions centre" id="choix-alerte">
+        <button class="btn secondaire" id="alarme" type="button">Déclencher l’alarme</button>
+        <button class="btn" id="enqueter" type="button">Enquêter d’abord</button>
+      </div>
+      <div class="feedback" id="fb-alerte" tabindex="-1"></div>
+      <div class="actions centre" id="zone-terminal" hidden>
+        <button class="btn" id="ouvrir-terminal" type="button">Ouvrir le terminal d’enquête</button>
+      </div>
+    </div>
+
+    <!-- Étape 2 : le terminal -->
+    <div id="etape-terminal" hidden>
+      <h2 id="titre-terminal" tabindex="-1" class="sr-only">Le terminal d’enquête</h2>
+      <div class="terminal">
+        <div class="fenetre">
+          <div class="onglets" role="tablist" aria-label="Outils de vérification">
+            <button role="tab" id="tab-ent" aria-controls="pan-ent" type="button">ENT du collège</button>
+            <button role="tab" id="tab-web" aria-controls="pan-web" type="button">Recherche web</button>
+            <button role="tab" id="tab-img" aria-controls="pan-img" type="button">Recherche d’images</button>
+          </div>
+
+          <!-- ENT -->
+          <div class="panneau" role="tabpanel" id="pan-ent" aria-labelledby="tab-ent" hidden>
+            <div class="page-web">
+              <div class="bandeau-ent">ENT · Collège Jean-Moulin</div>
+              <h4>Actualités de l’établissement</h4>
+              <div class="bloc"><b>Alertes</b>Aucune alerte en cours.</div>
+              <div class="bloc"><b>Aujourd’hui · Cantine</b>Menu du jour : carottes râpées, hachis parmentier, compote.</div>
+              <div class="bloc"><b>Hier · Vie scolaire</b>Sortie au musée des 4e B : autorisation à rendre vendredi.</div>
+            </div>
+            <div class="question" id="q-ent"></div>
+          </div>
+
+          <!-- Recherche web -->
+          <div class="panneau" role="tabpanel" id="pan-web" aria-labelledby="tab-web" hidden>
+            <div class="page-web">
+              <form class="recherche" id="form-web">
+                <label for="saisie-web" class="sr-only">Rechercher sur le web</label>
+                <input id="saisie-web" type="search" placeholder="Tape ta recherche" autocomplete="off">
+                <button type="submit">Rechercher</button>
+              </form>
+              <p class="feedback info" id="aide-web" style="color:#1E2140" hidden></p>
+              <div id="resultats-web" hidden>
+                <div class="resultat"><span class="lien">Inondations : les bons gestes à connaître</span><span class="url">site du gouvernement · fiche générale</span><p>Que faire en cas d’inondation : se mettre en hauteur, suivre les consignes…</p></div>
+                <div class="resultat"><span class="lien">Collège Jean-Moulin : le club théâtre présente son spectacle</span><span class="url">Le Journal de la Vallée · il y a 2 jours</span><p>Les élèves du club théâtre ont joué devant leurs familles…</p></div>
+                <div class="resultat"><span class="lien">« Vous avez vu la photo du collège ?? »</span><span class="url">forum · message d’un internaute · il y a 15 min</span><p>Quelqu’un sait si c’est vrai ? Je l’ai vue sur @Alerte_Infos…</p></div>
+                <p class="aucun-article">Aucun article de presse sur une inondation au collège Jean-Moulin.</p>
+              </div>
+            </div>
+            <div class="question" id="q-web"></div>
+          </div>
+
+          <!-- Recherche inversée -->
+          <div class="panneau" role="tabpanel" id="pan-img" aria-labelledby="tab-img" hidden>
+            <div class="page-web">
+              <h4>Recherche d’images inversée</h4>
+              <div class="depot-zone" id="depot-zone">
+                <img class="vignette" id="vignette" src="../images/college-inonde.jpg" alt="La photo du collège inondé" draggable="true">
+                <div class="zone-depot" id="zone-depot">Glisse la photo ici pour savoir d’où elle vient.</div>
+              </div>
+              <div class="actions" style="margin-top:8px"><button class="btn secondaire" id="deposer" type="button" style="color:#2F6FDB;border-color:#2F6FDB">Déposer l’image</button></div>
+              <div id="resultats-img" hidden>
+                <div class="bloc"><b>Première publication</b>Il y a 1 h · compte <strong>@Prank_IA</strong><br>Bio du compte : « Images créées par IA pour faire rire »</div>
+                <div class="bloc"><b>Republiée ensuite par</b>@Alerte_Infos · il y a 20 min · 2 400 partages</div>
+              </div>
+            </div>
+            <div class="question" id="q-img"></div>
+          </div>
+        </div>
+
+        <div class="verre carnet">
+          <h3>Carnet d’enquête</h3>
+          <ol id="carnet">
+            <li class="vide" id="indice-ent">Source officielle : à vérifier</li>
+            <li class="vide" id="indice-web">Presse : à vérifier</li>
+            <li class="vide" id="indice-img">Recherche inversée : à vérifier</li>
+          </ol>
+          <div class="actions" id="zone-verdict" hidden>
+            <button class="btn" id="aller-verdict" type="button">Rendre mon verdict</button>
+          </div>
+        </div>
+      </div>
+      <div class="feedback" id="fb-terminal" tabindex="-1"></div>
+    </div>
+
+    <!-- Étape 3 : le verdict -->
+    <div id="etape-verdict" hidden>
+      <h2 id="titre-verdict" tabindex="-1">Le verdict</h2>
+      <div class="verre">
+        <fieldset class="options" id="decision">
+          <legend>1. Que décides-tu ?</legend>
+          <label><input type="radio" name="decision" value="fausse"> Fausse alerte : je ne déclenche pas l’alarme et je ne partage pas.</label>
+          <label><input type="radio" name="decision" value="vraie"> Vraie alerte : je déclenche l’alarme et je partage.</label>
+          <label><input type="radio" name="decision" value="savoir"> Je ne peux pas savoir.</label>
+        </fieldset>
+        <fieldset class="options" id="preuves">
+          <legend>2. Coche les preuves qui le montrent.</legend>
+          <label><input type="checkbox" value="ent"> L’ENT du collège ne publie aucune alerte.</label>
+          <label><input type="checkbox" value="nette"> L’image est très nette et très réaliste.</label>
+          <label><input type="checkbox" value="presse"> Aucun journal ne parle d’une inondation au collège.</label>
+          <label><input type="checkbox" value="partages"> Beaucoup de gens l’ont partagée.</label>
+          <label><input type="checkbox" value="prank"> L’image a été publiée en premier par @Prank_IA, un compte qui crée des images par IA pour rire.</label>
+        </fieldset>
+        <div class="actions"><button class="btn" id="valider-verdict" type="button">Valider mon verdict</button></div>
+        <div class="feedback" id="fb-verdict" tabindex="-1"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FIN DU JEU ========== -->
+  <section id="fin" class="fin" aria-labelledby="titre-fin" hidden>
+    <h2 id="titre-fin" tabindex="-1">Enquête résolue !</h2>
+    <p class="etoiles" id="etoiles" aria-hidden="true"></p>
+    <p class="score-grand" id="score-final"></p>
+    <p id="message-final"></p>
+
+    <div class="verre">
+      <h3>Ce que tu as appris</h3>
+      <p class="synthese">Face à une image parfaite, vérifie qui la publie et si d’autres sources fiables en parlent.</p>
+      <p style="margin:0 0 8px">Une IA peut fabriquer une photo parfaitement réaliste en quelques secondes. Une image très nette ou très partagée n’est donc <strong>pas une preuve</strong>.</p>
+      <p style="margin:0">Pour vérifier, utilise les 3 outils : la <strong>source officielle</strong> (ENT, site de l’établissement), la <strong>presse</strong>, et la <strong>recherche inversée</strong> pour trouver qui a publié l’image en premier.</p>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn secondaire" id="rejouer" type="button">Rejouer</button>
+      <a class="btn" href="../bilan/">Voir le bilan de la mission</a>
+    </div>
+  </section>
+</main>
+
+<script src="../../commun/progression.js"></script>
+<script>
+  const MISSION = "mission4", CLE = "jeu4", TOTAL = 6;
+  const $ = (id) => document.getElementById(id);
+  function annoncer(t) { $("annonce").textContent = ""; setTimeout(() => { $("annonce").textContent = t; }, 50); }
+  function montrer(id) { ["accueil", "partie", "fin"].forEach((s) => { $(s).hidden = s !== id; }); window.scrollTo(0, 0); }
+  function el(tag, cls, texte) { const e = document.createElement(tag); if (cls) e.className = cls; if (texte) e.textContent = texte; return e; }
+  function etape(id, nom) { ["etape-alerte", "etape-terminal", "etape-verdict"].forEach((s) => { $(s).hidden = s !== id; }); $("etape-nom").textContent = nom; window.scrollTo(0, 0); }
+  function ajouterPoint() { points++; $("points").textContent = points; }
+
+  const OUTILS = {
+    ent: { q: "Le collège a-t-il publié une alerte d’inondation ?", choix: ["Oui", "Non"], bonne: 1,
+      faux: "Relis le bloc « Alertes » de l’ENT.",
+      indice: "Source officielle : l’ENT ne publie aucune alerte, seulement le menu de la cantine.",
+      bravo: "Exact. Si le collège était inondé, il préviendrait d’abord les familles et les élèves sur l’ENT." },
+    web: { q: "Un journal parle-t-il de l’inondation du collège ?", choix: ["Oui", "Non"], bonne: 1,
+      faux: "Regarde bien qui a écrit chaque résultat : un journaliste, ou un internaute qui pose une question ?",
+      indice: "Presse : aucun article sur une inondation au collège.",
+      bravo: "Exact. Un événement aussi grave serait repris par la presse locale. Le seul résultat qui en parle est un internaute qui se pose la question." },
+    img: { q: "Qui a publié l’image en premier ?", choix: ["Le collège Jean-Moulin", "@Prank_IA, un compte qui crée des images par IA pour rire", "Le Journal de la Vallée"], bonne: 1,
+      faux: "Relis le bloc « Première publication ».",
+      indice: "Recherche inversée : l’image vient de @Prank_IA, publiée il y a 1 h.",
+      bravo: "Exact. L’image a été créée par une IA pour faire une blague, puis @Alerte_Infos l’a republiée comme si elle était vraie." },
+  };
+  const ORDRE = ["ent", "web", "img"];
+
+  let points, alarmeRatee, faits, debloque, verdictRate, decisionRatee, preuvesRatees, actif;
+
+  function demarrer() {
+    points = 0; alarmeRatee = false; faits = {}; debloque = false;
+    decisionRatee = false; preuvesRatees = false;
+    $("points").textContent = "0";
+    $("choix-alerte").hidden = false; $("zone-terminal").hidden = true;
+    $("fb-alerte").className = "feedback"; $("fb-alerte").innerHTML = "";
+    // Terminal remis à zéro
+    ORDRE.forEach((k) => {
+      $("tab-" + k).classList.remove("fait");
+      $("q-" + k).innerHTML = "";
+      const li = $("indice-" + k); li.className = "vide";
+    });
+    $("indice-ent").textContent = "Source officielle : à vérifier";
+    $("indice-web").textContent = "Presse : à vérifier";
+    $("indice-img").textContent = "Recherche inversée : à vérifier";
+    $("saisie-web").value = ""; $("resultats-web").hidden = true; $("aide-web").hidden = true;
+    $("resultats-img").hidden = true; $("zone-depot").textContent = "Glisse la photo ici pour savoir d’où elle vient."; $("deposer").disabled = false;
+    $("zone-verdict").hidden = true; $("fb-terminal").className = "feedback"; $("fb-terminal").innerHTML = "";
+    // Verdict remis à zéro
+    document.querySelectorAll("#etape-verdict input").forEach((c) => { c.checked = false; c.disabled = false; });
+    $("valider-verdict").disabled = false; $("fb-verdict").className = "feedback"; $("fb-verdict").innerHTML = "";
+    montrer("partie");
+    etape("etape-alerte", "Étape 1 sur 3 · L’alerte");
+    $("titre-partie").focus();
+    annoncer("Sur l’écran géant, le compte @Alerte_Infos publie : URGENT, le collège Jean-Moulin sous les eaux ! Partagez ! Avec une photo très réaliste du collège inondé. Noah veut déclencher l’alarme.");
+  }
+
+  // ---------- Étape 1 ----------
+  function choisirAlerte(alarme) {
+    const fb = $("fb-alerte"); fb.innerHTML = "";
+    $("choix-alerte").hidden = true;
+    if (alarme) {
+      alarmeRatee = true;
+      fb.className = "feedback faux";
+      const v = el("p"); v.append(el("span", "verdict", "Stop ! "), "Noah s’arrête juste avant d’appuyer : « Attends… une image parfaite, ce n’est pas une preuve. Si c’était faux, j’aurais déclenché l’alarme pour rien. Enquêtons d’abord. »");
+      fb.append(v);
+    } else {
+      ajouterPoint();
+      fb.className = "feedback bon";
+      const v = el("p"); v.append(el("span", "verdict", "Bon réflexe ! +1 point "), "Avant d’agir ou de partager, on vérifie. Noah ouvre le terminal du labyrinthe.");
+      fb.append(v);
+    }
+    $("zone-terminal").hidden = false;
+    fb.focus(); annoncer(fb.textContent);
+  }
+
+  // ---------- Étape 2 ----------
+  function ouvrirTerminal() {
+    etape("etape-terminal", "Étape 2 sur 3 · L’enquête");
+    majOnglets();
+    ouvrirOnglet("ent");
+    $("titre-terminal").focus();
+    annoncer("Terminal d’enquête. Commence par l’ENT du collège : c’est la source officielle.");
+  }
+
+  function majOnglets() {
+    ORDRE.forEach((k) => {
+      const t = $("tab-" + k);
+      t.disabled = k !== "ent" && !debloque;
+      t.classList.toggle("fait", !!faits[k]);
+      t.title = t.disabled ? "Commence par la source officielle : l’ENT" : "";
+    });
+  }
+
+  function ouvrirOnglet(k) {
+    actif = k;
+    ORDRE.forEach((x) => {
+      $("tab-" + x).setAttribute("aria-selected", x === k ? "true" : "false");
+      $("tab-" + x).tabIndex = x === k ? 0 : -1;
+      $("pan-" + x).hidden = x !== k;
+    });
+    if (k === "ent" && !faits.ent) poserQuestion("ent");
+  }
+
+  function poserQuestion(k) {
+    const o = OUTILS[k], z = $("q-" + k);
+    if (z.childElementCount) return;
+    z.append(el("p", "q", o.q));
+    const c = el("div", "choix"); c.setAttribute("role", "group"); c.setAttribute("aria-label", o.q);
+    let ratee = false;
+    const fb = el("div", "feedback"); fb.tabIndex = -1;
+    o.choix.forEach((t, i) => {
+      const b = el("button", null, t); b.type = "button";
+      b.addEventListener("click", () => {
+        fb.innerHTML = "";
+        if (i !== o.bonne) {
+          ratee = true; b.disabled = true;
+          fb.className = "feedback faux";
+          const v = el("p"); v.append(el("span", "verdict", "Pas encore. "), o.faux); fb.append(v);
+          fb.focus(); annoncer(fb.textContent); return;
+        }
+        c.querySelectorAll("button").forEach((x) => { x.disabled = true; });
+        b.classList.add("bonne");
+        if (!ratee) ajouterPoint();
+        fb.className = "feedback bon";
+        const v = el("p"); v.append(el("span", "verdict", "Indice trouvé !" + (ratee ? " " : " +1 point ")), o.bravo); fb.append(v);
+        noterIndice(k);
+        fb.focus(); annoncer(fb.textContent + " L’indice est ajouté au carnet d’enquête.");
+      });
+      c.append(b);
+    });
+    z.append(c, fb);
+  }
+
+  function noterIndice(k) {
+    faits[k] = true;
+    const li = $("indice-" + k); li.className = ""; li.textContent = OUTILS[k].indice;
+    if (k === "ent" && !debloque) {
+      debloque = true;
+      const fbt = $("fb-terminal"); fbt.className = "feedback info"; fbt.innerHTML = "";
+      fbt.append(el("p", null, "Les onglets « Recherche web » et « Recherche d’images » sont maintenant ouverts. Va les explorer, dans l’ordre que tu veux."));
+    }
+    majOnglets();
+    if (ORDRE.every((x) => faits[x])) {
+      $("fb-terminal").className = "feedback"; $("fb-terminal").innerHTML = "";
+      $("zone-verdict").hidden = false;
+    }
+  }
+
+  function rechercherWeb(e) {
+    e.preventDefault();
+    const t = $("saisie-web").value.toLowerCase();
+    const aide = $("aide-web");
+    if (!/inond/.test(t)) {
+      aide.hidden = false; aide.textContent = "Cherche avec des mots précis, par exemple : « inondation collège Jean-Moulin ».";
+      $("resultats-web").hidden = true; annoncer(aide.textContent); return;
+    }
+    aide.hidden = true;
+    $("resultats-web").hidden = false;
+    annoncer("Résultats : une fiche générale sur les inondations, un article sur le club théâtre du collège, un message de forum d’un internaute. Aucun article de presse sur une inondation au collège Jean-Moulin.");
+    poserQuestion("web");
+  }
+
+  function deposerImage() {
+    $("zone-depot").classList.remove("survol");
+    $("zone-depot").textContent = "Image déposée : recherche terminée.";
+    $("deposer").disabled = true;
+    $("resultats-img").hidden = false;
+    annoncer("Résultat de la recherche inversée. Première publication il y a 1 heure, par le compte @Prank_IA. Bio du compte : Images créées par IA pour faire rire. Republiée ensuite par @Alerte_Infos il y a 20 minutes.");
+    poserQuestion("img");
+  }
+
+  // ---------- Étape 3 ----------
+  function allerVerdict() {
+    etape("etape-verdict", "Étape 3 sur 3 · Le verdict");
+    $("titre-verdict").focus();
+  }
+
+  function validerVerdict() {
+    const fb = $("fb-verdict"); fb.innerHTML = "";
+    const d = document.querySelector('input[name="decision"]:checked');
+    const preuves = Array.from(document.querySelectorAll("#preuves input:checked")).map((c) => c.value);
+    if (!d || !preuves.length) { fb.className = "feedback info"; fb.append(el("p", null, "Choisis une décision et coche au moins une preuve.")); fb.focus(); return; }
+    const decisionOk = d.value === "fausse";
+    const bonnes = ["ent", "presse", "prank"];
+    const pieges = preuves.filter((p) => !bonnes.includes(p));
+    const manquantes = bonnes.filter((p) => !preuves.includes(p));
+    const preuvesOk = !pieges.length && !manquantes.length;
+    if (decisionOk && preuvesOk) {
+      if (!decisionRatee) ajouterPoint();
+      if (!preuvesRatees) ajouterPoint();
+      document.querySelectorAll("#etape-verdict input").forEach((c) => { c.disabled = true; });
+      $("valider-verdict").disabled = true;
+      terminer(); return;
+    }
+    if (!decisionOk) decisionRatee = true;
+    if (!preuvesOk) preuvesRatees = true;
+    fb.className = "feedback faux";
+    const v = el("p"); v.append(el("span", "verdict", "Pas encore. "));
+    if (!decisionOk) v.append(d.value === "vraie" ? "Relis ton carnet d’enquête : aucune des 3 sources ne confirme l’inondation. " : "Tu as mené l’enquête avec 3 outils : relis ton carnet, il te permet de trancher. ");
+    if (pieges.length) v.append("Attention : une image nette ou très partagée n’est pas une preuve, une IA peut fabriquer les deux. ");
+    if (manquantes.length) v.append("Il te manque " + (manquantes.length > 1 ? manquantes.length + " preuves" : "une preuve") + " : chaque outil du terminal t’en a donné une. ");
+    fb.append(v); fb.focus(); annoncer(fb.textContent);
+  }
+
+  function terminer() {
+    const nb = Progression.etoiles(points, TOTAL);
+    Progression.enregistrer(MISSION, CLE, { points, total: TOTAL, etoiles: nb, reussi: true });
+    Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+    $("etoiles").innerHTML = [1, 2, 3].map((i) => '<span class="' + (i <= nb ? "pleine" : "vide") + '">★</span>').join("");
+    $("score-final").textContent = points + " points sur " + TOTAL + " · " + nb + " étoile" + (nb > 1 ? "s" : "") + " sur 3";
+    $("message-final").textContent = nb === 3
+      ? "Bravo, enquêteur ! Tu as prouvé que l’image était fausse sans tomber dans aucun piège. Noah reste calme : son collège va très bien."
+      : nb === 2 ? "Bien joué ! Tu as prouvé que l’image était fausse. Relis le résumé ci-dessous pour retenir la méthode."
+      : "Tu as prouvé que l’image était fausse, bravo pour ta persévérance ! Relis le résumé ci-dessous, puis rejoue si tu veux gagner plus d’étoiles.";
+    montrer("fin"); $("titre-fin").focus();
+    annoncer("Enquête résolue. " + $("score-final").textContent);
+  }
+
+  // ---------- Glisser-déposer ----------
+  const zone = $("zone-depot");
+  $("vignette").addEventListener("dragstart", (e) => { e.dataTransfer.setData("text/plain", "photo"); });
+  zone.addEventListener("dragover", (e) => { if ($("deposer").disabled) return; e.preventDefault(); zone.classList.add("survol"); });
+  zone.addEventListener("dragleave", () => zone.classList.remove("survol"));
+  zone.addEventListener("drop", (e) => { e.preventDefault(); if (!$("deposer").disabled) deposerImage(); });
+
+  // ---------- Onglets au clavier ----------
+  ORDRE.forEach((k, i) => {
+    const t = $("tab-" + k);
+    t.addEventListener("click", () => ouvrirOnglet(k));
+    t.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      const dispo = ORDRE.filter((x) => !$("tab-" + x).disabled);
+      let j = dispo.indexOf(k) + (e.key === "ArrowRight" ? 1 : -1);
+      j = (j + dispo.length) % dispo.length;
+      ouvrirOnglet(dispo[j]); $("tab-" + dispo[j]).focus(); e.preventDefault();
+    });
+  });
+
+  $("commencer").addEventListener("click", demarrer);
+  $("rejouer").addEventListener("click", demarrer);
+  $("alarme").addEventListener("click", () => choisirAlerte(true));
+  $("enqueter").addEventListener("click", () => choisirAlerte(false));
+  $("ouvrir-terminal").addEventListener("click", ouvrirTerminal);
+  $("form-web").addEventListener("submit", rechercherWeb);
+  $("deposer").addEventListener("click", deposerImage);
+  $("aller-verdict").addEventListener("click", allerVerdict);
+  $("valider-verdict").addEventListener("click", validerVerdict);
+  Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+</script>
+</body>
+</html>

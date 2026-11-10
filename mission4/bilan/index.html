@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bilan – Mission 4 · Le Voyage de Noah</title>
+<link rel="stylesheet" href="../../commun/labyrinthe.css">
+<style>
+  .titre-bilan { text-align: center; margin: 8px 0 18px; }
+  .etat-mission { max-width: 760px; margin: 0 auto 18px; text-align: center; border: 2px solid var(--bord); border-radius: 14px; padding: 14px 18px; }
+  .etat-mission.reussie { border-color: var(--neon); background: rgba(91,227,166,.1); }
+  .etat-mission .verdict { display: block; font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+  .etat-mission.reussie .verdict { color: var(--neon); }
+  .etat-mission p { margin: 0; }
+
+  .scores { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  .scores th, .scores td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--bord); vertical-align: top; }
+  .scores th { color: var(--texte-doux); font-size: 14px; text-transform: uppercase; letter-spacing: .04em; }
+  .scores .mini { color: var(--ambre); letter-spacing: 3px; white-space: nowrap; }
+  .scores .mini .vide { color: #4A5275; }
+  .scores .afaire { color: var(--texte-doux); font-style: italic; }
+  .total { font-size: 18px; font-weight: 800; margin: 12px 0 0; }
+
+  .grille { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  @media (max-width: 820px) { .grille { grid-template-columns: 1fr; } }
+  .verre h2 { font-size: 20px; color: var(--cyan); }
+  .conseils { margin: 0; padding-left: 22px; }
+  .conseils li { margin-bottom: 8px; }
+  .etape-methode { margin: 0; padding-left: 22px; }
+  .etape-methode li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <p class="fil">Le Voyage de Noah · Chapitre 3 · Mission 4 : L’écran truqué</p>
+  <nav class="couloir" id="couloir" aria-label="Progression dans la mission"></nav>
+</div>
+
+<main>
+  <div class="titre-bilan">
+    <h1 id="titre" tabindex="-1">Bilan de la mission 4</h1>
+    <p class="duree">Durée : 1 min</p>
+  </div>
+
+  <div class="etat-mission" id="etat-mission">
+    <span class="verdict" id="verdict-mission"></span>
+    <p id="message-mission"></p>
+  </div>
+
+  <div class="noah" style="max-width:760px;margin:0 auto 16px">
+    <div class="avatar" aria-hidden="true"></div>
+    <p class="bulle" id="bulle-noah"></p>
+  </div>
+
+  <section class="verre" aria-labelledby="titre-scores">
+    <h2 id="titre-scores">Tes résultats</h2>
+    <table class="scores">
+      <thead><tr><th scope="col">Jeu</th><th scope="col">Ce que tu as travaillé</th><th scope="col">Score</th><th scope="col">Étoiles</th></tr></thead>
+      <tbody id="lignes"></tbody>
+    </table>
+    <p class="total" id="total"></p>
+  </section>
+
+  <div class="grille">
+    <section class="verre" aria-labelledby="titre-appris">
+      <h2 id="titre-appris">Ce que tu as appris</h2>
+      <p style="margin:0 0 8px">Une IA peut fabriquer des <strong>images</strong>, des <strong>vidéos</strong>, des <strong>voix</strong> et des <strong>messages</strong> si réalistes qu’on ne voit plus la différence. Une image parfaite n’est donc <strong>pas une preuve</strong>.</p>
+      <ol class="etape-methode">
+        <li><strong>Observe</strong> : cherche les indices d’une image truquée (texte déformé, mains, ombres, reflets).</li>
+        <li><strong>Vérifie la source</strong> : qui publie ? Un compte officiel ou un inconnu ?</li>
+        <li><strong>Croise</strong> : la source officielle, la presse et la recherche inversée en parlent-elles ?</li>
+        <li><strong>Décide</strong> : partager, vérifier encore, ou ignorer et signaler.</li>
+      </ol>
+      <p style="margin:8px 0 0">Face à une image parfaite, vérifie qui la publie et si d’autres sources fiables en parlent.</p>
+    </section>
+
+    <section class="verre" aria-labelledby="titre-conseils">
+      <h2 id="titre-conseils">Les conseils de Noah pour toi</h2>
+      <ul class="conseils" id="conseils"></ul>
+    </section>
+  </div>
+
+  <div class="consigne" style="margin-top:18px">
+    <h2>Et maintenant ?</h2>
+    <p>Ferme cet onglet et retourne sur le site du Voyage de Noah pour lire « Ce que Noah a découvert » et passer à la mission suivante.</p>
+  </div>
+
+  <div class="actions centre">
+    <button class="btn secondaire" id="recommencer">Recommencer toute la mission</button>
+  </div>
+</main>
+
+<script src="../../commun/progression.js"></script>
+<script>
+const MISSION = "mission4";
+
+const JEUX = [
+  { cle: "jeu1", nom: "Jeu 1 : Les indices de l’image", methode: "Repérer les indices d’une image truquée", lien: "../jeu1/",
+    conseil: "Zoome sur les détails : les textes et logos, les mains, les horloges, les reflets et les ombres trahissent souvent une image générée." },
+  { cle: "jeu2", nom: "Jeu 2 : Le fil d’actu", methode: "Choisir avant de partager", lien: "../jeu2/",
+    conseil: "Avant de partager, regarde qui publie. Une source officielle ou un vrai journal : tu peux partager. Un compte inconnu : vérifie. Une arnaque ou une moquerie : ignore et signale." },
+  { cle: "jeu3", nom: "Jeu 3 : Les messages piégés", methode: "Repérer un message piégé", lien: "../jeu3/",
+    conseil: "Expéditeur inconnu, urgence, demande de code ou de transfert : ce sont des signaux d’alerte. Vérifie toujours par un autre canal que tu connais." },
+  { cle: "jeu4", nom: "Jeu 4 : L’alerte du collège inondé", methode: "Évaluation : prouver qu’une image est fausse", lien: "../jeu4/",
+    conseil: "Utilise les 3 outils : la source officielle, la presse et la recherche inversée. Une image nette ou très partagée n’est pas une preuve." }
+];
+
+const $ = (id) => document.getElementById(id);
+function el(tag, cls, texte) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (texte) e.textContent = texte;
+  return e;
+}
+function mini(nb) {
+  const s = el("span", "mini");
+  s.setAttribute("aria-label", nb + " étoile" + (nb > 1 ? "s" : "") + " sur 3");
+  s.innerHTML = [1, 2, 3].map((i) => i <= nb ? "★" : '<span class="vide">★</span>').join("");
+  return s;
+}
+
+function afficher() {
+  const scores = Progression.lire(MISSION);
+  const lignes = $("lignes");
+  lignes.innerHTML = "";
+  let etoiles = 0;
+  const manquants = [], aRevoir = [];
+
+  JEUX.forEach((j) => {
+    const r = scores[j.cle];
+    const tr = el("tr");
+    tr.append(el("td", null, j.nom), el("td", null, j.methode));
+    if (r) {
+      etoiles += r.etoiles;
+      tr.append(el("td", null, r.points + " / " + r.total));
+      const td = el("td");
+      td.append(mini(r.etoiles));
+      tr.append(td);
+      if (r.etoiles < 3) aRevoir.push(j);
+    } else {
+      manquants.push(j);
+      const td = el("td", "afaire");
+      td.colSpan = 2;
+      const a = el("a", null, "Pas encore joué : y aller");
+      a.href = j.lien;
+      td.append(a);
+      tr.append(td);
+    }
+    lignes.append(tr);
+  });
+  $("total").textContent = "Total : " + etoiles + " étoile" + (etoiles > 1 ? "s" : "") + " sur 12";
+
+  // Mission réussie quand les 4 jeux sont faits et l’évaluation (jeu 4) réussie. Le badge est remis sur le site Canva.
+  const gagne = manquants.length === 0 && scores.jeu4 && scores.jeu4.reussi;
+  $("etat-mission").className = "etat-mission" + (gagne ? " reussie" : "");
+  $("verdict-mission").textContent = gagne ? "Mission 4 accomplie !" : "Mission 4 en cours";
+  $("message-mission").textContent = gagne
+    ? "Bravo ! Tu as terminé les 4 jeux et réussi l’évaluation « L’alerte du collège inondé ». Retourne sur le site du Voyage de Noah pour découvrir la suite."
+    : "Pour accomplir la mission, termine les 4 jeux et réussis « L’alerte du collège inondé » (bonne décision et les 3 preuves).";
+
+  $("bulle-noah").innerHTML = "<strong>Noah :</strong> " + (gagne
+    ? (etoiles >= 11
+      ? "« Incroyable ! Aucune image truquée ne te piège : grâce à toi, j’ai gardé mon calme… et mon collège va très bien ! »"
+      : "« Merci ! Grâce à toi, je sais vérifier une image avant d’y croire ou de la partager. Regarde mes conseils pour devenir encore meilleur. »")
+    : "« Il nous reste encore des portes à ouvrir avant de sortir de cette partie du labyrinthe. On continue ? »");
+
+  const ul = $("conseils");
+  ul.innerHTML = "";
+  manquants.forEach((j) => {
+    const li = el("li");
+    const a = el("a", null, j.nom);
+    a.href = j.lien;
+    li.append("Termine le ", a, " pour compléter ta mission.");
+    ul.append(li);
+  });
+  aRevoir.forEach((j) => {
+    const li = el("li");
+    li.append(el("strong", null, j.nom + " : "), j.conseil);
+    ul.append(li);
+  });
+  if (ul.children.length === 0) ul.append(el("li", null, "Trois étoiles partout : tu es un vrai enquêteur ! Devant chaque image choc, pense à vérifier qui la publie avant de la partager."));
+}
+
+$("recommencer").addEventListener("click", () => {
+  if (!confirm("Tes scores de la mission 4 vont être effacés. Veux-tu recommencer ?")) return;
+  try { localStorage.removeItem("noah-ch3-" + MISSION); } catch (e) { /* stockage indisponible */ }
+  location.href = "../jeu1/";
+});
+
+Progression.dessinerCouloir($("couloir"), MISSION, "bilan");
+afficher();
+$("titre").focus();
+</script>
+</body>
+</html>
