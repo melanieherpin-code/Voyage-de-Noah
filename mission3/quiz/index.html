@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz réflexes – Mission 3 · Le Voyage de Noah</title>
+<link rel="stylesheet" href="../../commun/labyrinthe.css">
+<style>
+  main { max-width: 760px; padding-top: 16px; }
+  .titre { text-align: center; margin: 0 0 14px; }
+  .titre h1 { font-size: 28px; }
+  .barre-info { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--texte-doux); font-weight: 600; margin: 0 0 10px; }
+  .barre-info strong { color: var(--texte); }
+  .progres { height: 6px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; margin: 0 0 14px; }
+  .progres span { display: block; height: 100%; background: var(--cyan); transition: width .3s; }
+  .question { font-size: 20px; font-weight: 800; line-height: 1.45; margin: 0 0 14px; }
+  .choix { display: grid; gap: 10px; }
+  .choix button { font: inherit; text-align: left; color: var(--texte); cursor: pointer; background: rgba(255,255,255,.05);
+    border: 2px solid var(--bord); border-radius: 12px; padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start; }
+  .choix button:hover:not([disabled]) { border-color: var(--cyan); background: rgba(142,202,230,.12); }
+  .choix button[disabled] { cursor: default; }
+  .choix .lettre { flex: 0 0 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; background: rgba(142,202,230,.18); }
+  .choix button.bonne { border-color: var(--neon); background: rgba(91,227,166,.12); }
+  .choix button.bonne .lettre { background: var(--neon); color: var(--nuit); }
+  .choix button.mauvaise { border-color: var(--rose); background: rgba(255,138,138,.12); }
+  .choix button.mauvaise .lettre { background: var(--rose); color: var(--nuit); }
+  .recap { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .recap li { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--bord); background: rgba(255,255,255,.04); }
+  .recap .ok { color: var(--neon); font-weight: 800; }
+  .recap .ko { color: var(--rose); font-weight: 800; }
+  .fin { text-align: center; }
+  .fin .verre { text-align: left; margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <p class="fil">Le Voyage de Noah · Chapitre 3 · Mission 3 : La galerie des portraits</p>
+</div>
+
+<main>
+  <p class="sr-only" id="annonce" aria-live="polite"></p>
+
+  <section id="accueil">
+    <div class="titre">
+      <h1 id="titre-accueil" tabindex="-1">Quiz réflexes</h1>
+      <p class="objectif">Objectif : choisir le bon réflexe face à une situation nouvelle.</p>
+      <p class="duree">Durée : 5 min</p>
+    </div>
+    <div class="noah">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle"><strong>Noah :</strong> « Avant de quitter la galerie des portraits, vérifions tes réflexes : sauras-tu repérer qui manque ? »</p>
+    </div>
+    <div class="consigne">
+      <h2>Consigne</h2>
+      <p>Cinq situations, trois réponses possibles à chaque fois. Choisis le bon réflexe : la correction s’affiche tout de suite.</p>
+    </div>
+    <div class="actions centre">
+      <button class="btn" id="commencer" type="button">Commencer le quiz</button>
+    </div>
+  </section>
+
+  <section id="jeu" hidden aria-labelledby="question">
+    <div class="barre-info">
+      <span id="compteur"></span>
+      <span>Bonnes réponses : <strong id="points">0</strong> / 5</span>
+    </div>
+    <div class="progres" aria-hidden="true"><span id="barre"></span></div>
+    <div class="verre">
+      <p class="question" id="question" tabindex="-1"></p>
+      <div class="choix" id="choix" role="group" aria-labelledby="question"></div>
+      <div class="feedback" id="feedback" tabindex="-1"></div>
+      <div class="actions" id="zone-suivante" hidden>
+        <button class="btn" id="suivante" type="button">Question suivante</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="fin" class="fin" hidden>
+    <h2 id="titre-fin" tabindex="-1">Quiz terminé !</h2>
+    <p class="score-grand" id="score"></p>
+    <div class="noah" style="justify-content:center">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle" style="text-align:left" id="bulle-fin"></p>
+    </div>
+    <section class="verre" aria-labelledby="titre-recap">
+      <h3 id="titre-recap">Tes réponses</h3>
+      <ul class="recap" id="recap"></ul>
+    </section>
+    <div class="consigne" style="margin-top:16px;text-align:left">
+      <h3>Et maintenant ?</h3>
+      <p>Retourne sur le site du Voyage de Noah pour continuer ton voyage.</p>
+    </div>
+    <div class="actions centre">
+      <button class="btn secondaire" id="rejouer" type="button">Refaire le quiz</button>
+    </div>
+  </section>
+</main>
+
+<script>
+  const QUESTIONS = [
+    {
+      "q": "Tu demandes à une IA « un chirurgien au travail ». Elle génère 4 images d’hommes blancs d’une cinquantaine d’années. Quel est le bon réflexe ?",
+      "choix": [
+        "J’utilise l’image, c’est ce qu’elle a trouvé.",
+        "Je me demande qui manque, et je précise ma demande : « des chirurgiennes et des chirurgiens de tous âges et de toutes origines ».",
+        "Je demande à l’IA d’arrêter d’avoir des préjugés."
+      ],
+      "bonne": 1,
+      "correction": "L’IA n’a pas de préjugés à elle : elle reproduit ses données. Toi, tu peux préciser ta demande, puis regarder le résultat."
+    },
+    {
+      "q": "Pourquoi une IA génère-t-elle souvent des stéréotypes ?",
+      "choix": [
+        "Parce que ses données d’entraînement, créées par des humains, sont déséquilibrées.",
+        "Parce qu’elle a ses propres préjugés.",
+        "Parce qu’on lui a demandé de le faire."
+      ],
+      "bonne": 0,
+      "correction": "Les stéréotypes viennent des données créées par des humains. L’IA calcule ce qui revient le plus souvent, et le répète."
+    },
+    {
+      "q": "Pour l’affiche de la fête du collège, tu écris « que des filles qui font du sport » pour corriger le stéréotype. Est-ce une bonne idée ?",
+      "choix": [
+        "Oui, on rétablit l’équilibre.",
+        "Oui, si les couleurs de peau sont variées.",
+        "Non : on crée un nouveau stéréotype, il faut représenter tout le monde."
+      ],
+      "bonne": 2,
+      "correction": "Une galerie équilibrée représente tous les profils, sans tomber dans l’excès inverse."
+    },
+    {
+      "q": "Un ami te dit : « Si l’IA montre des pilotes hommes, c’est que c’est la vérité. » Que lui réponds-tu ?",
+      "choix": [
+        "Il a raison, l’IA ne se trompe pas.",
+        "L’IA montre ce qui est le plus fréquent dans ses données, pas forcément la réalité : des femmes pilotent aussi.",
+        "L’IA n’aime pas les femmes pilotes."
+      ],
+      "bonne": 1,
+      "correction": "« Le plus fréquent dans les données » ne veut pas dire « vrai ». Et l’IA n’aime ni ne déteste personne."
+    },
+    {
+      "q": "Dans un jeu vidéo, tu crées ton personnage, mais tous les visages proposés ont la peau claire. Qu’est-ce que c’est ?",
+      "choix": [
+        "Un biais : tout le monde ne peut pas se représenter.",
+        "Un choix de couleur sans importance.",
+        "Un bug de l’ordinateur."
+      ],
+      "bonne": 0,
+      "correction": "Ce n’est pas une erreur technique, c’est un choix de conception qui oublie une partie des joueurs. Les biais existent aussi en dehors des images générées par IA."
+    }
+  ];
+  const BRAVO = "« Bravo ! Tu sais repérer les stéréotypes et demander une image qui représente tout le monde. »";
+  const ENCORE = "« Relis les corrections : des données déséquilibrées, ça donne des images stéréotypées. Demande-toi toujours : qui manque ? »";
+  const LETTRES = ["A", "B", "C"];
+
+  const $ = (id) => document.getElementById(id);
+  function annoncer(t) { $("annonce").textContent = ""; setTimeout(() => { $("annonce").textContent = t; }, 50); }
+  function el(tag, cls, texte) { const e = document.createElement(tag); if (cls) e.className = cls; if (texte) e.textContent = texte; return e; }
+  function montrer(id) { ["accueil", "jeu", "fin"].forEach((s) => { $(s).hidden = s !== id; }); window.scrollTo(0, 0); }
+
+  let pos, points, reponses;
+
+  function demarrer() { pos = 0; points = 0; reponses = []; $("points").textContent = "0"; montrer("jeu"); afficher(); }
+
+  function afficher() {
+    const q = QUESTIONS[pos];
+    $("compteur").textContent = "Question " + (pos + 1) + " sur " + QUESTIONS.length;
+    $("barre").style.width = (pos / QUESTIONS.length * 100) + "%";
+    $("question").textContent = (pos + 1) + ". " + q.q;
+    const zone = $("choix"); zone.innerHTML = "";
+    q.choix.forEach((texte, k) => {
+      const b = el("button"); b.type = "button";
+      b.append(el("span", "lettre", LETTRES[k]), el("span", null, texte));
+      b.addEventListener("click", () => repondre(k));
+      zone.append(b);
+    });
+    $("feedback").className = "feedback"; $("feedback").innerHTML = "";
+    $("zone-suivante").hidden = true;
+    $("question").focus();
+  }
+
+  function repondre(k) {
+    const q = QUESTIONS[pos];
+    const juste = k === q.bonne;
+    if (juste) points++;
+    reponses.push(juste);
+    $("points").textContent = points;
+    const boutons = $("choix").querySelectorAll("button");
+    boutons.forEach((b, i) => {
+      b.disabled = true;
+      if (i === q.bonne) b.classList.add("bonne");
+      else if (i === k) b.classList.add("mauvaise");
+    });
+    const fb = $("feedback"); fb.innerHTML = "";
+    fb.className = "feedback " + (juste ? "bon" : "faux");
+    const v = el("p");
+    v.append(el("span", "verdict", juste ? "Bon réflexe ! " : "Pas tout à fait. "), juste ? "" : "La bonne réponse était la " + LETTRES[q.bonne] + ".");
+    fb.append(v, el("p", null, q.correction));
+    $("suivante").textContent = pos === QUESTIONS.length - 1 ? "Voir mon résultat" : "Question suivante";
+    $("zone-suivante").hidden = false;
+    fb.focus(); annoncer(fb.textContent);
+  }
+
+  function suivante() { if (pos < QUESTIONS.length - 1) { pos++; afficher(); } else terminer(); }
+
+  function terminer() {
+    $("barre").style.width = "100%";
+    $("score").textContent = points + " bon" + (points > 1 ? "s" : "") + " réflexe" + (points > 1 ? "s" : "") + " sur " + QUESTIONS.length;
+    $("bulle-fin").innerHTML = "";
+    $("bulle-fin").append(el("strong", null, "Noah : "), points >= 4 ? BRAVO : ENCORE);
+    const ul = $("recap"); ul.innerHTML = "";
+    QUESTIONS.forEach((q, i) => {
+      const li = el("li");
+      li.append(el("span", reponses[i] ? "ok" : "ko", reponses[i] ? "Juste · " : "À revoir · "), q.q);
+      ul.append(li);
+    });
+    montrer("fin"); $("titre-fin").focus();
+    annoncer("Quiz terminé. " + $("score").textContent);
+  }
+
+  $("commencer").addEventListener("click", demarrer);
+  $("suivante").addEventListener("click", suivante);
+  $("rejouer").addEventListener("click", demarrer);
+</script>
+</body>
+</html>
