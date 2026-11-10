@@ -169,13 +169,13 @@
     { appli: "SMS", exp: "Numéro inconnu", numero: "+33 6 12 •• •• 87", inconnu: true, couleur: "#E07A5F", heure: "Aujourd’hui, 16:05",
       texte: "Coucou mon chéri, c’est maman ! J’ai cassé mon téléphone, je t’écris avec celui d’une collègue. Tu peux m’envoyer vite le code que tu viens de recevoir par SMS ? C’est urgent, je t’expliquerai ce soir. Bisous",
       signaux: ["inconnu", "urgence", "code"],
-      reflexes: ["J’envoie le code, c’est ma mère.", "Je lui pose une question que seule ma mère connaît.", "Je n’envoie rien et j’appelle maman sur son vrai numéro."], bonne: 2,
-      e: "C’est une arnaque très répandue : avec un code reçu par SMS, quelqu’un peut voler un compte. Le message peut imiter la façon d’écrire de ta mère : appelle-la sur son vrai numéro." },
-    { appli: "Message privé · réseau social", exp: "StarGaming_officiel", numero: "Compte non vérifié · créé il y a 3 jours", inconnu: true, couleur: "#9B5DE5", heure: "Hier, 19:12",
-      texte: "Salut, c’est moi ! Tu as gagné mon concours ! Pour recevoir ton cadeau, envoie-moi le mot de passe de ton compte de jeu.",
+      reflexes: ["J’envoie le code, c’est ma mère.", "Je lui pose une question que seule ma mère connaît.", "Je n’envoie rien et j’appelle maman sur son vrai numéro."], bonne: [1, 2],
+      e: "C’est une arnaque très répandue : avec un code reçu par SMS, quelqu’un peut voler un compte. Le message peut imiter la façon d’écrire de ta mère. Deux bons réflexes : lui poser une question que seule ta mère connaît, ou l’appeler sur son vrai numéro. Et dans tous les cas, tu n’envoies pas le code." },
+    { appli: "Message privé · réseau social", exp: "Kurama_officiel", numero: "Compte non vérifié · créé il y a 3 jours", inconnu: true, couleur: "#9B5DE5", heure: "Hier, 19:12",
+      texte: "Salut, c’est moi, Kurama ! Tu as gagné mon concours ! Pour recevoir ton cadeau, envoie-moi le mot de passe de ton compte de jeu.",
       signaux: ["inconnu", "code"],
       reflexes: ["Je ne donne jamais mon mot de passe, et j’en parle à un adulte.", "Je donne mon mot de passe, puis je le change après.", "Je demande au compte une photo pour vérifier."], bonne: 0,
-      e: "Personne, même une star, n’a besoin de ton mot de passe. Un faux compte peut copier le nom et la photo d’une personne célèbre, et une IA peut fabriquer une photo « preuve »." },
+      e: "Personne, même une star, n’a besoin de ton mot de passe. Un faux compte peut copier le nom et la photo d’un joueur célèbre comme Kurama, et une IA peut fabriquer une photo « preuve »." },
     { appli: "Appli du club", exp: "Club de foot", numero: "Contact enregistré", inconnu: false, couleur: "#3D9970", heure: "Aujourd’hui, 12:30",
       texte: "Rappel : l’entraînement de mercredi est décalé à 18 heures.",
       signaux: ["aucun"],
@@ -255,7 +255,8 @@
   function choisirReflexe(k, bouton) {
     const m = MESSAGES[pos];
     const fb = $("fb-reflexe"); fb.innerHTML = "";
-    if (k !== m.bonne) {
+    const bonnes = [].concat(m.bonne);
+    if (!bonnes.includes(k)) {
       rateeReflexe = true; bouton.disabled = true;
       fb.className = "feedback faux";
       const v = el("p"); v.append(el("span", "verdict", "Pas encore. "), m.signaux[0] === "aucun" ? "Ce message vient d’un contact connu, par le canal habituel. Essaie encore." : "Le bon réflexe, c’est de ne rien envoyer et de vérifier par un autre canal que tu connais. Essaie encore.");
