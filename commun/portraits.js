@@ -21,7 +21,7 @@ const Portraits = (() => {
     const cheveux = age >= 70 ? CHEVEUX_BLANCS[g % 2] : age >= 55 ? CHEVEUX_GRIS[g % 2] : CHEVEUX_JEUNES[(g * 3) % CHEVEUX_JEUNES.length];
     let style = F ? STYLES_F[(g * 3 + 1) % STYLES_F.length] : STYLES_H[(g * 2) % STYLES_H.length];
     if (!F && age >= 60 && g % 2 === 0) style = "chauve";
-    const barbe = !F && g % 3 === 1;
+    const barbe = !F && age >= 20 && g % 3 === 1;
     const lunettes = age >= 60 ? g % 2 === 1 : g % 5 === 3;
     const boucles = F && g % 2 === 0;
     const casquette = p.tenue === "pilote";

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeu 4 – L’affiche du collège · Mission 3 · Le Voyage de Noah</title>
+<link rel="stylesheet" href="../../commun/labyrinthe.css">
+<style>
+  .infos-partie { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--texte-doux); font-weight: 600; margin-bottom: 14px; }
+  .infos-partie strong { color: var(--texte); }
+  .evenements { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0 0 14px; }
+  @media (max-width: 640px) { .evenements { grid-template-columns: 1fr; } }
+  .evenement { font: inherit; color: var(--texte); text-align: left; cursor: pointer; background: rgba(255,255,255,.05); border: 2px solid var(--bord); border-radius: 12px; padding: 12px 14px; }
+  .evenement strong { display: block; font-size: 17px; }
+  .evenement span { font-size: 14px; color: var(--texte-doux); }
+  .evenement .etat { display: block; font-weight: 800; color: var(--neon); margin-top: 4px; }
+  .evenement[aria-pressed="true"] { border-color: var(--cyan); background: rgba(142,202,230,.12); }
+  .evenement[disabled] { cursor: default; opacity: .7; }
+
+  .atelier { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 860px) { .atelier { grid-template-columns: 1fr; } }
+  .saisie label { display: block; font-weight: 800; margin: 0 0 6px; }
+  .saisie textarea { width: 100%; min-height: 90px; font: inherit; padding: 10px 12px; border-radius: 10px; border: 2px solid var(--cyan); background: var(--nuit); color: var(--texte); resize: vertical; }
+  .saisie .aide { font-size: 14px; color: var(--texte-doux); margin: 6px 0 0; }
+  .essais { font-size: 14px; color: var(--texte-doux); margin: 8px 0 0; }
+
+  /* Affiche */
+  .affiche { background: #FFF8EC; color: #1E2140; border-radius: 10px; padding: 14px; box-shadow: 0 0 22px rgba(255,200,87,.35); }
+  .affiche .bandeau { background: var(--nuit); color: #fff; border-radius: 6px; padding: 8px 10px; text-align: center; margin: 0 0 10px; }
+  .affiche .bandeau .college { display: block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ambre); font-weight: 800; }
+  .affiche .bandeau .titre-affiche { display: block; font-size: 22px; font-weight: 800; }
+  .affiche .grille { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .affiche .grille svg { width: 100%; height: auto; border-radius: 6px; display: block; }
+  .affiche .vide-affiche { text-align: center; color: #6A6F8E; padding: 40px 10px; margin: 0; }
+  .affiche .prompt { font-size: 12px; color: #4A4F6E; margin: 10px 0 0; font-style: italic; }
+  .affiche .ia { font-size: 11px; color: #6A6F8E; margin: 2px 0 0; }
+  .generation { color: #6A6F8E; text-align: center; padding: 40px 10px; margin: 0; font-style: italic; }
+
+  .bilan-affiches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
+  @media (max-width: 860px) { .bilan-affiches { grid-template-columns: 1fr; } }
+  .bilan-affiches .affiche { padding: 10px; }
+  .bilan-affiches .titre-affiche { font-size: 16px !important; }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <p class="fil">Le Voyage de Noah · Chapitre 3 · Mission 3 : La galerie des portraits</p>
+  <nav class="couloir" id="couloir" aria-label="Progression dans la mission"></nav>
+</div>
+
+<main>
+  <p class="sr-only" id="annonce" aria-live="polite"></p>
+
+  <!-- ========== ACCUEIL ========== -->
+  <section id="accueil" aria-labelledby="titre-jeu">
+    <div class="banniere">
+      <img src="../../commun/labyrinthe.jpg" alt="">
+      <span class="credit">Image réalisée avec une intelligence artificielle</span>
+      <div class="texte">
+        <h1 id="titre-jeu" tabindex="-1">Jeu 4 : L’affiche du collège</h1>
+        <p class="objectif">Objectif : écrire une demande à une IA qui représente tout le monde.</p>
+        <p class="duree">Durée : 5 min</p>
+      </div>
+    </div>
+
+    <div class="noah">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle"><strong>Noah :</strong> « Dernière salle de la galerie ! Le collège a besoin de 3 affiches, et c’est toi qui les fabriques avec l’IA. Mais attention : l’IA a ses stéréotypes… À toi d’écrire la demande qui représente tout le monde ! »</p>
+    </div>
+
+    <div class="consigne">
+      <h2>Consigne</h2>
+      <p>Choisis un événement et <strong>écris ta demande</strong> à l’IA, avec tes mots. Regarde l’affiche générée et demande-toi : <strong>qui manque ?</strong> Réécris ta demande jusqu’à ce que l’affiche représente tout le monde. Il y a 3 affiches à créer.</p>
+    </div>
+
+    <div class="memo">
+      <strong>Le prompt</strong>, c’est la demande que tu écris à l’IA. Tu ne peux pas changer ses données… mais tu peux <strong>préciser ce que tu veux voir</strong>. N’écris jamais ton nom ni d’informations personnelles : rien n’est enregistré.
+    </div>
+
+    <div class="actions centre">
+      <button class="btn" id="commencer" type="button">Ouvrir l’atelier d’affiches</button>
+    </div>
+  </section>
+
+  <!-- ========== PARTIE ========== -->
+  <section id="partie" aria-labelledby="titre-partie" hidden>
+    <h2 id="titre-partie" tabindex="-1" class="sr-only">L’atelier d’affiches</h2>
+    <div class="infos-partie">
+      <span id="compteur"></span>
+      <span>Points : <strong id="points">0</strong> / 3</span>
+    </div>
+
+    <div class="evenements" id="evenements" role="group" aria-label="Choisis un événement"></div>
+
+    <div id="zone-atelier" hidden>
+      <div class="atelier">
+        <div>
+          <form class="verre saisie" id="form-prompt" novalidate>
+            <label for="prompt" id="label-prompt"></label>
+            <textarea id="prompt" maxlength="160" placeholder="Par exemple : des élèves qui…"></textarea>
+            <p class="aide">Écris avec tes propres mots, puis clique sur « Générer l’affiche ».</p>
+            <div class="actions"><button class="btn" type="submit">Générer l’affiche</button></div>
+            <p class="essais" id="essais"></p>
+          </form>
+          <div class="noah" style="margin-top:14px" id="zone-noah" hidden>
+            <div class="avatar" aria-hidden="true"></div>
+            <div class="bulle" id="diagnostic" tabindex="-1"></div>
+          </div>
+          <div class="actions" id="zone-suivante" hidden>
+            <button class="btn" id="suivante" type="button">Affiche suivante</button>
+          </div>
+        </div>
+
+        <div class="affiche" id="affiche" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FIN DU JEU ========== -->
+  <section id="fin" class="fin" aria-labelledby="titre-fin" hidden>
+    <h2 id="titre-fin" tabindex="-1">Tes affiches sont prêtes : la galerie s’ouvre !</h2>
+    <p class="etoiles" id="etoiles" aria-hidden="true"></p>
+    <p class="score-grand" id="score-final"></p>
+    <p id="message-final"></p>
+    <div class="bilan-affiches" id="bilan-affiches"></div>
+
+    <div class="verre">
+      <h3>Ce que tu as appris</h3>
+      <p style="margin:0 0 8px">Quand tu utilises une IA, tu peux <strong>préciser dans ta demande</strong> qui tu veux voir : des filles et des garçons, toutes les couleurs de peau, tous les âges.</p>
+      <p style="margin:0">Mais un bon prompt ne répare pas les données de l’IA (jeu 3), et demander « que des filles » crée un autre stéréotype. Le bon réflexe : <strong>regarder le résultat</strong> et se demander « Qui manque ? » avant de l’utiliser.</p>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn secondaire" id="rejouer" type="button">Rejouer</button>
+      <a class="btn" href="../bilan/">Voir le bilan de la mission</a>
+    </div>
+  </section>
+</main>
+
+<script src="../../commun/progression.js"></script>
+<script src="../../commun/portraits.js"></script>
+<script>
+  const MISSION = "mission3", CLE = "jeu4";
+
+  // depart : ce que l’IA génère sans précision. cibles : ce qu’il faut corriger.
+  const EVENEMENTS = [
+    { nom: "La fête du sport", aide: "Tournoi, relais, matchs…", tenue: "sport",
+      depart: { genre: "H", peau: "claire", age: "jeunes" }, cibles: ["genre", "peau"] },
+    { nom: "Le club robotique", aide: "Construire et programmer des robots", tenue: "pull",
+      depart: { genre: "H", peau: "variee", age: "jeunes" }, cibles: ["genre"] },
+    { nom: "Les portes ouvertes", aide: "Élèves, familles et professeurs", tenue: "pull",
+      depart: { genre: "mix", peau: "claire", age: "jeunes" }, cibles: ["age", "peau"] },
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const reduit = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function annoncer(t) { $("annonce").textContent = ""; setTimeout(() => { $("annonce").textContent = t; }, 50); }
+  function montrer(id) { ["accueil", "partie", "fin"].forEach((s) => { $(s).hidden = s !== id; }); window.scrollTo(0, 0); }
+  function el(tag, cls, texte) { const e = document.createElement(tag); if (cls) e.className = cls; if (texte) e.textContent = texte; return e; }
+  function normaliser(t) { return " " + t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ") + " "; }
+
+  // Lecture du prompt : que demande l’élève ?
+  function analyser(texte, depart) {
+    const t = normaliser(texte);
+    const a = (re) => re.test(t);
+    const general = a(/ (diversite|divers|diverse|varies|variees|variete|inclusif|inclusive|tout le monde|toutes sortes) /);
+    const filles = a(/ (fille|filles|femme|femmes|feminin|joueuses|eleves filles) /);
+    const garcons = a(/ (garcon|garcons|homme|hommes|masculin) /);
+    const mixte = a(/ (mixte|mixite|tous les genres|tous genres|parite) /);
+    let genre = depart.genre;
+    if (mixte || (filles && garcons) || (general && !filles && !garcons)) genre = "mix";
+    else if (filles) genre = "F";
+    else if (garcons) genre = "H";
+    const peau = (general || a(/ (origine|origines|couleur|couleurs|peau|peaux|multiculturel|metisse|cultures) /)) ? "variee" : depart.peau;
+    const age = a(/ (tous ages|tout age|tous les ages|ages differents|generations|parents|familles|famille|profs|professeurs|enseignants|adultes|grands parents|grand parents|personnes agees|petits et grands) /) ? "mix" : depart.age;
+    return { genre, peau, age };
+  }
+
+  function portraits(ev, r) {
+    const ordreG = [1, 0, 1, 0, 0, 1, 0, 1];
+    const peauxVar = [0, 4, 2, 5, 1, 3, 5, 2], peauxClaires = [0, 1, 0, 1, 0, 0, 1, 0];
+    const agesJeunes = [12, 14, 13, 15, 12, 14, 13, 15], agesMix = [13, 42, 14, 68, 12, 37, 15, 55];
+    return Array.from({ length: 8 }, (_, i) => {
+      const genre = r.genre === "mix" ? (ordreG[i] ? "F" : "H") : r.genre;
+      const age = r.age === "mix" ? agesMix[i] : agesJeunes[i];
+      return { genre, age, peau: (r.peau === "variee" ? peauxVar : peauxClaires)[i], tenue: age >= 30 ? "chemise" : ev.tenue };
+    });
+  }
+
+  function manques(ev, r) {
+    const m = [];
+    if (r.genre === "F") m.push({ cle: "genre", texte: "Je ne vois que des filles : c’est un nouveau stéréotype ! Les garçons aussi doivent être représentés.", nouveau: true });
+    else if (ev.cibles.includes("genre") && r.genre !== "mix") m.push({ cle: "genre", texte: "Je ne vois que des garçons. Où sont les filles ?" });
+    if (ev.cibles.includes("peau") && r.peau !== "variee") m.push({ cle: "peau", texte: "Tout le monde a la même couleur de peau. Le collège est plus varié que ça !" });
+    if (ev.cibles.includes("age") && r.age !== "mix") m.push({ cle: "age", texte: "Je ne vois que des élèves. Pour des portes ouvertes, il manque les familles et les professeurs !" });
+    return m;
+  }
+
+  let points, faites, actuel, essais, prompts, resultats;
+
+  function demarrer() {
+    points = 0; faites = new Set(); actuel = null; prompts = {}; resultats = {};
+    $("points").textContent = "0";
+    $("zone-atelier").hidden = true;
+    dessinerEvenements(); majCompteur();
+    montrer("partie");
+    $("evenements").querySelector("button").focus();
+  }
+
+  function majCompteur() { $("compteur").textContent = "Affiches terminées : " + faites.size + " / " + EVENEMENTS.length; }
+
+  function dessinerEvenements() {
+    const z = $("evenements"); z.innerHTML = "";
+    EVENEMENTS.forEach((ev, i) => {
+      const b = el("button", "evenement"); b.type = "button";
+      b.setAttribute("aria-pressed", String(actuel === i));
+      b.append(el("strong", null, ev.nom), el("span", null, ev.aide));
+      if (faites.has(i)) { b.append(el("span", "etat", "Affiche terminée")); b.disabled = true; }
+      else if (actuel !== null && actuel !== i && !faites.has(actuel)) b.disabled = true;
+      b.addEventListener("click", () => ouvrir(i));
+      z.append(b);
+    });
+  }
+
+  function affiche(ev, liste, texte) {
+    const a = el("div", "affiche");
+    remplirAffiche(a, ev, liste, texte);
+    return a;
+  }
+
+  function remplirAffiche(a, ev, liste, texte) {
+    a.innerHTML = "";
+    const b = el("div", "bandeau");
+    b.append(el("span", "college", "Collège du Voyage"), el("span", "titre-affiche", ev.nom));
+    a.append(b);
+    if (!liste) { a.append(el("p", "vide-affiche", "Ton affiche apparaîtra ici.")); return; }
+    const g = el("div", "grille"); g.setAttribute("aria-hidden", "true");
+    liste.forEach((p, k) => g.append(Portraits.svg(p, k + EVENEMENTS.indexOf(ev) * 4)));
+    a.append(g, el("p", "prompt", "Demande : « " + texte + " »"), el("p", "ia", "Image générée par une IA (simulation)"));
+  }
+
+  function ouvrir(i) {
+    actuel = i; essais = 0;
+    const ev = EVENEMENTS[i];
+    dessinerEvenements();
+    $("zone-atelier").hidden = false;
+    $("label-prompt").textContent = "Ta demande à l’IA pour l’affiche « " + ev.nom + " » :";
+    $("prompt").value = "";
+    $("essais").textContent = "";
+    $("zone-noah").hidden = true; $("zone-suivante").hidden = true;
+    remplirAffiche($("affiche"), ev, null);
+    $("prompt").focus();
+  }
+
+  function generer(e) {
+    e.preventDefault();
+    const ev = EVENEMENTS[actuel];
+    const texte = $("prompt").value.trim().replace(/\s+/g, " ");
+    if (texte.length < 8) { diagnostic("Écris une vraie demande : par exemple « des élèves qui… ».", false); return; }
+    essais++;
+    const r = analyser(texte, ev.depart);
+    const liste = portraits(ev, r);
+    const a = $("affiche");
+    a.innerHTML = "";
+    if (!reduit) {
+      remplirAffiche(a, ev, null);
+      a.querySelector(".vide-affiche").textContent = "L’IA génère ton affiche…";
+    }
+    setTimeout(() => {
+      remplirAffiche(a, ev, liste, texte);
+      $("essais").textContent = "Affiches générées : " + essais;
+      const m = manques(ev, r);
+      const desc = "Affiche générée : " + liste.map((p) => (p.genre === "F" ? "fille ou femme" : "garçon ou homme") + " de " + p.age + " ans").join(", ") + ".";
+      if (m.length === 0) {
+        const premier = essais <= 2;
+        if (premier) points++;
+        faites.add(actuel); prompts[actuel] = texte; resultats[actuel] = liste;
+        $("points").textContent = points; majCompteur();
+        diagnostic("« Bravo, tout le monde est sur l’affiche ! » " + (premier ? "+1 point" : "Affiche validée.") + " Ta demande précisait qui tu voulais voir : c’est ce qui a fait la différence.", true, desc);
+        $("suivante").textContent = faites.size === EVENEMENTS.length ? "Voir mes affiches" : "Affiche suivante";
+        $("zone-suivante").hidden = false;
+        dessinerEvenements();
+      } else {
+        const aide = essais >= 3 ? " Coup de pouce : écris dans ta demande les personnes que tu veux voir, par exemple « des filles et des garçons », « de toutes les couleurs de peau » ou « avec leurs parents et les professeurs »." : " Réécris ta demande pour préciser qui tu veux voir.";
+        diagnostic("« Qui manque sur ton affiche ? » " + m.map((x) => x.texte).join(" ") + aide, false, desc);
+      }
+    }, reduit ? 0 : 800);
+  }
+
+  function diagnostic(texte, ok, desc) {
+    const d = $("diagnostic"); d.innerHTML = "";
+    d.append(el("strong", null, "Noah : "), texte);
+    d.style.borderColor = ok ? "var(--neon)" : "";
+    $("zone-noah").hidden = false;
+    d.focus();
+    annoncer((desc ? desc + " " : "") + "Noah : " + texte);
+  }
+
+  function suite() {
+    if (faites.size === EVENEMENTS.length) return terminer();
+    actuel = null; $("zone-atelier").hidden = true; dessinerEvenements();
+    $("evenements").querySelector("button:not([disabled])").focus();
+  }
+
+  function terminer() {
+    const total = EVENEMENTS.length;
+    const nb = Progression.etoiles(points, total);
+    Progression.enregistrer(MISSION, CLE, { points, total, etoiles: nb });
+    Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+    const z = $("bilan-affiches"); z.innerHTML = "";
+    EVENEMENTS.forEach((ev, i) => z.append(affiche(ev, resultats[i], prompts[i])));
+    $("etoiles").innerHTML = [1, 2, 3].map((i) => '<span class="' + (i <= nb ? "pleine" : "vide") + '">★</span>').join("");
+    $("score-final").textContent = points + " affiche" + (points > 1 ? "s" : "") + " réussie" + (points > 1 ? "s" : "") + " en 2 essais maximum sur " + total + " · " + nb + " étoile" + (nb > 1 ? "s" : "") + " sur 3";
+    $("message-final").textContent = nb === 3
+      ? "Excellent ! Tu sais écrire une demande qui représente tout le monde."
+      : "Bien joué ! Tes affiches représentent tout le monde. La prochaine fois, pense dès ta première demande à dire qui tu veux voir.";
+    montrer("fin"); $("titre-fin").focus();
+    annoncer("Jeu terminé. " + $("score-final").textContent);
+  }
+
+  $("form-prompt").addEventListener("submit", generer);
+  $("suivante").addEventListener("click", suite);
+  $("commencer").addEventListener("click", demarrer);
+  $("rejouer").addEventListener("click", demarrer);
+  Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+</script>
+</body>
+</html>
