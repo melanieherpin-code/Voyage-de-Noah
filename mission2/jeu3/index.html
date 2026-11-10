@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeu 3 – Ami ou outil ? · Mission 2 · Le Voyage de Noah</title>
+<link rel="stylesheet" href="../../commun/labyrinthe.css">
+<style>
+  .infos-partie { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--texte-doux); font-weight: 600; margin-bottom: 14px; }
+  .infos-partie strong { color: var(--texte); }
+  .jeu { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 860px) { .jeu { grid-template-columns: 1fr; } }
+
+  /* Téléphone de Noah */
+  .telephone { width: min(100%, 320px); margin: 0 auto; padding: 12px 10px 16px; border-radius: 36px; background: #05061A; border: 3px solid #3A3F6B; box-shadow: 0 0 22px rgba(169,139,255,.3), inset 0 0 0 2px #1B1E45; }
+  .encoche { width: 100px; height: 18px; margin: 0 auto 8px; border-radius: 0 0 14px 14px; background: #1B1E45; }
+  .ecran { border-radius: 24px; overflow: hidden; min-height: 380px; padding: 16px 12px; color: #1E2140;
+    background: linear-gradient(180deg, #2B2F72 0%, #5B4BA8 100%); display: flex; flex-direction: column; gap: 12px; }
+  .heure { text-align: center; color: #fff; font-size: 40px; font-weight: 800; margin: 8px 0 0; }
+  .date { text-align: center; color: #E3E6FF; font-size: 14px; margin: 0 0 6px; }
+  .notif { background: rgba(255,255,255,.94); border-radius: 16px; padding: 10px 12px; animation: apparition .35s ease-out; }
+  .notif .app { display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; color: #5B6080; text-transform: uppercase; letter-spacing: .04em; margin: 0 0 4px; }
+  .notif .msg { margin: 0; font-size: 16px; line-height: 1.4; }
+
+  .verre h3 { color: var(--cyan); }
+  .options { display: grid; gap: 10px; margin-top: 10px; }
+  .option { font: inherit; text-align: left; color: var(--texte); cursor: pointer; background: rgba(255,255,255,.05); border: 2px solid; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
+  .option .titre { font-weight: 800; font-size: 17px; }
+  .option .aide { font-size: 14px; color: var(--texte-doux); }
+  .option.ia { border-color: var(--violet); } .option.ia .titre { color: var(--violet); }
+  .option.ami { border-color: var(--ambre); } .option.ami .titre { color: var(--ambre); }
+  .option.adulte { border-color: var(--neon); } .option.adulte .titre { color: var(--neon); }
+  .option:hover:not([disabled]) { background: rgba(255,255,255,.1); }
+  .option[disabled] { cursor: default; opacity: .6; }
+  .option.choisie { opacity: 1; box-shadow: 0 0 14px rgba(91,227,166,.5); }
+
+  .bilan-categories { display: grid; gap: 8px; margin: 8px 0 0; padding: 0; list-style: none; }
+  .bilan-categories strong.ia { color: var(--violet); }
+  .bilan-categories strong.ami { color: var(--ambre); }
+  .bilan-categories strong.adulte { color: var(--neon); }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <p class="fil">Le Voyage de Noah · Chapitre 3 · Mission 2 : Le miroir des émotions</p>
+  <nav class="couloir" id="couloir" aria-label="Progression dans la mission"></nav>
+</div>
+
+<main>
+  <p class="sr-only" id="annonce" aria-live="polite"></p>
+
+  <!-- ========== ACCUEIL ========== -->
+  <section id="accueil" aria-labelledby="titre-jeu">
+    <div class="banniere">
+      <img src="../../commun/labyrinthe.jpg" alt="">
+      <span class="credit">Image réalisée avec une intelligence artificielle</span>
+      <div class="texte">
+        <h1 id="titre-jeu" tabindex="-1">Jeu 3 : Ami ou outil ?</h1>
+        <p class="objectif">Objectif : savoir quand une IA peut t’aider, et quand il vaut mieux parler à un être vivant.</p>
+        <p class="duree">Durée : 5 min</p>
+      </div>
+    </div>
+
+    <div class="noah">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle"><strong>Noah :</strong> « Mon téléphone n’arrête pas de vibrer ! Parfois, l’IA peut m’aider… mais parfois, j’ai besoin d’une vraie personne. Tu m’aides à choisir ? »</p>
+    </div>
+
+    <div class="consigne">
+      <h2>Consigne</h2>
+      <p>Huit situations vont s’afficher sur le téléphone de Noah. Pour chacune, choisis à qui Noah devrait s’adresser : <strong>l’IA, comme un outil</strong>, <strong>un ami ou un proche</strong>, ou <strong>un adulte de confiance</strong>.</p>
+    </div>
+
+    <div class="memo">
+      <strong>Pour t’aider</strong>
+      <ul>
+        <li>Une <strong>tâche</strong> à réaliser (chercher des idées, corriger, traduire) ? L’IA peut être un bon outil.</li>
+        <li>Une <strong>émotion</strong> à partager ou un <strong>problème</strong> à régler ? Il faut un être vivant qui t’écoute vraiment.</li>
+      </ul>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn" id="commencer" type="button">Allumer le téléphone</button>
+    </div>
+  </section>
+
+  <!-- ========== PARTIE ========== -->
+  <section id="partie" aria-labelledby="titre-partie" hidden>
+    <h2 id="titre-partie" tabindex="-1" class="sr-only">Les situations de Noah</h2>
+    <div class="infos-partie">
+      <span id="compteur"></span>
+      <span>Points : <strong id="points">0</strong> / 8</span>
+    </div>
+
+    <div class="jeu">
+      <div class="telephone" aria-hidden="true">
+        <div class="encoche"></div>
+        <div class="ecran">
+          <p class="heure">16:42</p>
+          <p class="date">Le téléphone de Noah</p>
+          <div class="notif" id="notif">
+            <p class="app"><span id="notif-app"></span><span>maintenant</span></p>
+            <p class="msg" id="notif-msg"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="verre">
+        <h3 id="titre-situation" tabindex="-1"></h3>
+        <p id="texte-situation" style="margin:0 0 4px"></p>
+        <p style="margin:0"><strong>À qui Noah devrait-il s’adresser ?</strong></p>
+        <div class="options" id="options" role="group" aria-label="À qui Noah devrait-il s’adresser ?">
+          <button class="option ia" data-rep="ia" type="button"><span class="titre">L’IA, comme un outil</span><span class="aide">Pour réaliser une tâche</span></button>
+          <button class="option ami" data-rep="ami" type="button"><span class="titre">Un ami ou un proche</span><span class="aide">Pour partager, se parler</span></button>
+          <button class="option adulte" data-rep="adulte" type="button"><span class="titre">Un adulte de confiance</span><span class="aide">Parent, professeur, infirmière scolaire…</span></button>
+        </div>
+        <div class="feedback" id="feedback" tabindex="-1"></div>
+        <div class="actions" id="zone-suivante" hidden>
+          <button class="btn" id="suivante" type="button">Situation suivante</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FIN DU JEU ========== -->
+  <section id="fin" class="fin" aria-labelledby="titre-fin" hidden>
+    <h2 id="titre-fin" tabindex="-1">Porte ouverte !</h2>
+    <p class="etoiles" id="etoiles" aria-hidden="true"></p>
+    <p class="score-grand" id="score-final"></p>
+    <p id="message-final"></p>
+
+    <div class="verre">
+      <h3>Ce que tu as appris</h3>
+      <ul class="bilan-categories">
+        <li><strong class="ia">L’IA est un outil</strong> : elle peut t’aider pour des tâches (chercher des idées, corriger, traduire). Mais c’est toi qui choisis et qui vérifies.</li>
+        <li><strong class="ami">Un ami ou un proche</strong> : pour partager une joie, se réconcilier, se parler. Une émotion se partage avec quelqu’un qui la ressent aussi.</li>
+        <li><strong class="adulte">Un adulte de confiance</strong> : quand tu es triste depuis longtemps, quand quelqu’un te fait du mal ou te demande de garder un secret. Une machine ne peut pas te protéger.</li>
+      </ul>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn secondaire" id="rejouer" type="button">Rejouer</button>
+      <a class="btn" href="../jeu4/">Jeu suivant : Les bons verbes</a>
+    </div>
+  </section>
+</main>
+
+<script src="../../commun/progression.js"></script>
+<script>
+  const MISSION = "mission2", CLE = "jeu3";
+  const NOMS = { ia: "L’IA, comme un outil", ami: "Un ami ou un proche", adulte: "Un adulte de confiance" };
+  const SITUATIONS = [
+    { app: "Calendrier", notif: "Anniversaire de ta sœur dans 3 jours !", t: "Noah cherche des idées de cadeau pour l’anniversaire de sa sœur.", rep: "ia",
+      e: "L’IA peut proposer des idées, mais c’est Noah qui choisit : il connaît sa sœur, pas la machine." },
+    { app: "Messages", notif: "Toujours pas de nouvelles de ton meilleur ami…", t: "Noah veut se réconcilier avec son meilleur ami.", rep: "ami",
+      e: "Une réconciliation se fait entre deux personnes : le mieux est d’aller lui parler." },
+    { app: "Réseau social · compte inconnu", notif: "« T’es vraiment nul. Personne ne veut de toi dans la classe. »", t: "Noah vient de recevoir ce message. Ce n’est pas le premier : ça dure depuis une semaine.", rep: "adulte",
+      e: "C’est une situation sérieuse : un adulte peut agir, une IA ne peut pas le protéger." },
+    { app: "Traitement de texte", notif: "Exposé.doc : 12 fautes repérées", t: "Noah veut corriger l’orthographe de son exposé.", rep: "ia",
+      e: "C’est une tâche technique : l’IA est un bon outil, à condition de relire." },
+    { app: "Journal intime", notif: "« Encore une journée où je me sens seul… »", t: "Noah se sent seul et triste depuis plusieurs jours.", rep: "adulte",
+      e: "Une machine n’écoute pas comme un être vivant : un parent, un professeur ou l’infirmière scolaire peuvent vraiment l’aider." },
+    { app: "Club de foot", notif: "Félicitations, tu es sélectionné dans l’équipe !", t: "Noah a été pris dans l’équipe de foot et veut partager sa joie.", rep: "ami",
+      e: "Une joie se partage avec quelqu’un qui la ressent aussi." },
+    { app: "ENT", notif: "Devoir d’anglais : « Read the text and answer the questions »", t: "Noah veut traduire une phrase en anglais pour comprendre une consigne.", rep: "ia",
+      e: "Traduire, c’est un traitement : l’IA peut l’aider, en vérifiant si le sens est clair." },
+    { app: "Mon compagnon IA", notif: "« Ne parle de nos conversations à personne. »", t: "L’IA compagnon d’une appli dit à Noah : « Ne parle de nos conversations à personne. »", rep: "adulte",
+      e: "C’est un signal d’alerte : personne, ni humain ni machine, ne doit te demander de garder des secrets à tes proches." },
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  function annoncer(t) { $("annonce").textContent = ""; setTimeout(() => { $("annonce").textContent = t; }, 50); }
+  function montrer(id) { ["accueil", "partie", "fin"].forEach((s) => { $(s).hidden = s !== id; }); window.scrollTo(0, 0); }
+
+  let pos, points, ratee;
+
+  function demarrer() { pos = 0; points = 0; $("points").textContent = "0"; montrer("partie"); afficher(); }
+
+  function afficher() {
+    ratee = false;
+    const s = SITUATIONS[pos];
+    $("compteur").textContent = "Situation " + (pos + 1) + " sur " + SITUATIONS.length;
+    $("notif-app").textContent = s.app;
+    $("notif-msg").textContent = s.notif;
+    const n = $("notif"); n.classList.remove("notif"); void n.offsetWidth; n.classList.add("notif");
+    $("titre-situation").textContent = "Situation " + (pos + 1);
+    $("texte-situation").textContent = s.t;
+    document.querySelectorAll(".option").forEach((b) => { b.disabled = false; b.classList.remove("choisie"); });
+    $("feedback").className = "feedback"; $("feedback").innerHTML = "";
+    $("zone-suivante").hidden = true;
+    $("titre-situation").focus();
+    annoncer("Situation " + (pos + 1) + ". Notification " + s.app + " : " + s.notif + ". " + s.t);
+  }
+
+  function choisir(rep, bouton) {
+    const s = SITUATIONS[pos];
+    const fb = $("feedback"); fb.innerHTML = "";
+    if (rep !== s.rep) {
+      ratee = true; bouton.disabled = true;
+      fb.className = "feedback faux";
+      const v = document.createElement("p");
+      v.innerHTML = '<span class="verdict">Pas encore.</span> Demande-toi : est-ce une tâche à réaliser, une émotion à partager, ou un problème sérieux ? Essaie encore.';
+      fb.append(v); fb.focus(); annoncer(fb.textContent); return;
+    }
+    document.querySelectorAll(".option").forEach((b) => { b.disabled = true; });
+    bouton.classList.add("choisie");
+    if (!ratee) points++;
+    $("points").textContent = points;
+    fb.className = "feedback bon";
+    const v = document.createElement("p");
+    v.innerHTML = '<span class="verdict">Bon choix !</span> ' + NOMS[rep] + "." + (ratee ? "" : " +1 point");
+    fb.append(v, Object.assign(document.createElement("p"), { textContent: s.e }));
+    $("suivante").textContent = pos === SITUATIONS.length - 1 ? "Voir mon résultat" : "Situation suivante";
+    $("zone-suivante").hidden = false;
+    fb.focus(); annoncer(fb.textContent);
+  }
+
+  function suivante() { if (pos < SITUATIONS.length - 1) { pos++; afficher(); } else terminer(); }
+
+  function terminer() {
+    const total = SITUATIONS.length;
+    const nb = Progression.etoiles(points, total);
+    Progression.enregistrer(MISSION, CLE, { points, total, etoiles: nb });
+    Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+    $("etoiles").innerHTML = [1, 2, 3].map((i) => '<span class="' + (i <= nb ? "pleine" : "vide") + '">★</span>').join("");
+    $("score-final").textContent = points + " bons choix du premier coup sur " + total + " · " + nb + " étoile" + (nb > 1 ? "s" : "") + " sur 3";
+    $("message-final").textContent = nb === 3
+      ? "Excellent ! Tu sais quand l’IA est un bon outil, et quand il faut parler à quelqu’un."
+      : nb === 2 ? "Bien joué ! Relis le résumé ci-dessous : une tâche, une émotion ou un problème sérieux ?"
+      : "Tu as aidé Noah jusqu’au bout, bravo pour ta persévérance ! Relis le résumé ci-dessous, puis rejoue si tu veux gagner plus d’étoiles.";
+    montrer("fin"); $("titre-fin").focus();
+    annoncer("Jeu terminé. " + $("score-final").textContent);
+  }
+
+  document.querySelectorAll(".option").forEach((b) => b.addEventListener("click", () => choisir(b.dataset.rep, b)));
+  $("suivante").addEventListener("click", suivante);
+  $("commencer").addEventListener("click", demarrer);
+  $("rejouer").addEventListener("click", demarrer);
+  Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+</script>
+</body>
+</html>
