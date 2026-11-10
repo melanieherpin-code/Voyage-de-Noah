@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeu 2 – Humain ou machine ? · Mission 2 · Le Voyage de Noah</title>
+<link rel="stylesheet" href="../../commun/labyrinthe.css">
+<style>
+  .plateau { display: grid; gap: 18px; }
+  .infos-partie { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--texte-doux); font-weight: 600; }
+  .infos-partie strong { color: var(--texte); }
+
+  .carte-tri {
+    max-width: 620px; margin: 0 auto; width: 100%; text-align: center;
+    background: linear-gradient(160deg, rgba(35,40,110,.95), rgba(18,20,59,.95));
+    border: 2px solid var(--cyan); border-radius: 16px; padding: 26px 24px;
+    box-shadow: 0 0 22px rgba(142,202,230,.35);
+  }
+  .carte-tri .num { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--cyan); font-weight: 800; margin: 0 0 8px; }
+  .carte-tri .texte { font-size: 22px; font-weight: 800; line-height: 1.4; margin: 0; }
+
+  .boites { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  @media (max-width: 720px) { .boites { grid-template-columns: 1fr; } }
+  .boite {
+    font: inherit; color: var(--texte); text-align: left; cursor: pointer;
+    background: rgba(255,255,255,.05); border: 2px solid; border-radius: 14px; padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 4px; transition: background .2s, box-shadow .2s;
+  }
+  .boite .titre { font-size: 19px; font-weight: 800; }
+  .boite .aide { font-size: 14px; color: var(--texte-doux); }
+  .boite .nb { font-size: 14px; font-weight: 600; }
+  .boite.vivant { border-color: var(--neon); }
+  .boite.vivant .titre { color: var(--neon); }
+  .boite.deux { border-color: var(--ambre); }
+  .boite.deux .titre { color: var(--ambre); }
+  .boite.machine { border-color: var(--violet); }
+  .boite.machine .titre { color: var(--violet); }
+  .boite:hover:not([disabled]) { background: rgba(255,255,255,.1); box-shadow: 0 0 14px rgba(142,202,230,.35); }
+  .boite[disabled] { cursor: default; opacity: .75; }
+  .boite.pulse { animation: porte .8s ease-out; }
+
+  .bilan-categories { display: grid; gap: 8px; margin: 8px 0 0; padding: 0; list-style: none; }
+  .bilan-categories strong.vivant { color: var(--neon); }
+  .bilan-categories strong.deux { color: var(--ambre); }
+  .bilan-categories strong.machine { color: var(--violet); }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <p class="fil">Le Voyage de Noah · Chapitre 3 · Mission 2 : Le miroir des émotions</p>
+  <nav class="couloir" id="couloir" aria-label="Progression dans la mission"></nav>
+</div>
+
+<main>
+  <p class="sr-only" id="annonce" aria-live="polite"></p>
+
+  <!-- ========== ACCUEIL ========== -->
+  <section id="accueil" aria-labelledby="titre-jeu">
+    <div class="banniere">
+      <img src="../../commun/labyrinthe.jpg" alt="">
+      <span class="credit">Image réalisée avec une intelligence artificielle</span>
+      <div class="texte">
+        <h1 id="titre-jeu" tabindex="-1">Jeu 2 : Humain ou machine ?</h1>
+        <p class="objectif">Objectif : distinguer le vivant de la machine.</p>
+        <p class="duree">Durée : 4 min</p>
+      </div>
+    </div>
+
+    <div class="noah">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle"><strong>Noah :</strong> « Dans cette salle du labyrinthe, tout se mélange : des êtres vivants, des machines… et parfois je n’arrive plus à faire la différence ! Aide-moi à remettre de l’ordre. »</p>
+    </div>
+
+    <div class="consigne">
+      <h2>Consigne</h2>
+      <p>Douze cartes vont apparaître une par une. Pour chacune, choisis la bonne boîte : <strong>Être vivant</strong>, <strong>Les deux</strong> ou <strong>Machine</strong>. Si tu te trompes, la carte reviendra plus tard : tu pourras réessayer.</p>
+    </div>
+
+    <div class="memo">
+      <strong>Pour t’aider, demande-toi :</strong>
+      <ul>
+        <li>Est-ce que ça <strong>ressent</strong>, <strong>grandit</strong>, <strong>décide</strong> ? C’est le propre du vivant.</li>
+        <li>Est-ce que ça <strong>calcule</strong>, <strong>stocke</strong>, <strong>exécute</strong> un programme ? C’est une machine.</li>
+        <li>Une machine peut <strong>faire comme</strong> un être vivant sans <strong>être</strong> vivante.</li>
+      </ul>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn" id="commencer" type="button">Commencer le tri</button>
+    </div>
+  </section>
+
+  <!-- ========== PARTIE ========== -->
+  <section id="partie" aria-labelledby="titre-partie" hidden>
+    <h2 id="titre-partie" tabindex="-1" class="sr-only">Tri : humain ou machine</h2>
+    <div class="plateau">
+      <div class="infos-partie">
+        <span id="compteur"></span>
+        <span>Points : <strong id="points">0</strong> / 12</span>
+      </div>
+
+      <article class="carte-tri apparait" id="carte" aria-live="polite">
+        <p class="num" id="carte-num"></p>
+        <p class="texte" id="carte-texte"></p>
+      </article>
+
+      <div class="boites" role="group" aria-label="Dans quelle boîte ranges-tu cette carte ?">
+        <button class="boite vivant" data-boite="vivant" type="button">
+          <span class="titre">Être vivant</span>
+          <span class="aide">Ressent, grandit, décide par lui-même</span>
+          <span class="nb" id="nb-vivant">0 carte</span>
+        </button>
+        <button class="boite deux" data-boite="deux" type="button">
+          <span class="titre">Les deux</span>
+          <span class="aide">Un être vivant et une machine peuvent le faire</span>
+          <span class="nb" id="nb-deux">0 carte</span>
+        </button>
+        <button class="boite machine" data-boite="machine" type="button">
+          <span class="titre">Machine</span>
+          <span class="aide">Calcule, stocke, exécute un programme</span>
+          <span class="nb" id="nb-machine">0 carte</span>
+        </button>
+      </div>
+
+      <div class="feedback" id="feedback" tabindex="-1"></div>
+      <div class="actions centre" id="zone-suivante" hidden>
+        <button class="btn" id="carte-suivante" type="button">Carte suivante</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FIN DU JEU ========== -->
+  <section id="fin" class="fin" aria-labelledby="titre-fin" hidden>
+    <h2 id="titre-fin" tabindex="-1">Porte ouverte !</h2>
+    <p class="etoiles" id="etoiles" aria-hidden="true"></p>
+    <p class="score-grand" id="score-final"></p>
+    <p id="message-final"></p>
+
+    <div class="verre">
+      <h3>Ce que tu as appris</h3>
+      <ul class="bilan-categories">
+        <li><strong class="vivant">Être vivant</strong> : il ressent des émotions, se souvient de ce qu’il a vécu, grandit, décide par lui-même. Un humain comme un animal.</li>
+        <li><strong class="machine">Machine</strong> : c’est un système technique. Il fonctionne grâce à de l’énergie et à un programme : il calcule, stocke des données, exécute.</li>
+        <li><strong class="deux">Les deux</strong> : une machine peut <strong>faire comme</strong> un être vivant (répondre, écrire une phrase gentille)… sans <strong>être</strong> vivante.</li>
+      </ul>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn secondaire" id="rejouer" type="button">Rejouer</button>
+      <a class="btn" href="../jeu3/">Jeu suivant : Ami ou outil ?</a>
+    </div>
+  </section>
+</main>
+
+<script src="../../commun/progression.js"></script>
+<script>
+  const MISSION = "mission2", CLE = "jeu2";
+  const NOMS = { vivant: "Être vivant", deux: "Les deux", machine: "Machine" };
+  const CARTES = [
+    { t: "Ressent de la tristesse après une dispute.", boite: "vivant", e: "Ressentir une émotion, c’est propre au vivant." },
+    { t: "Calcule la suite de mots la plus probable.", boite: "machine", e: "C’est le traitement réalisé par une IA." },
+    { t: "Répond quand on lui parle.", boite: "deux", e: "Un ami répond parce qu’il comprend. Une IA répond parce qu’elle traite ton message." },
+    { t: "Se souvient d’un moment passé ensemble et de ce qu’il a ressenti.", boite: "vivant", e: "Un souvenir vécu, avec ses émotions, c’est propre au vivant." },
+    { t: "Stocke tes messages comme des données.", boite: "machine", e: "Stocker des données n’est pas se souvenir." },
+    { t: "Un personnage de jeu vidéo qui dit « Tu m’as manqué ! » quand tu reviens.", boite: "machine", e: "La phrase est programmée pour s’afficher à ton retour : le personnage ne ressent rien." },
+    { t: "Ton chien qui remue la queue quand tu rentres.", boite: "vivant", e: "Un animal est un être vivant : il ressent vraiment quelque chose." },
+    { t: "Un assistant vocal qui répond « Avec plaisir ! ».", boite: "machine", e: "La politesse a été prévue par ceux qui l’ont conçu." },
+    { t: "Peut écrire une phrase gentille.", boite: "deux", e: "Une personne l’écrit parce qu’elle le pense. Une IA, parce que c’est la suite probable." },
+    { t: "A besoin de se nourrir, de dormir, grandit.", boite: "vivant", e: "Ce sont des caractéristiques du vivant." },
+    { t: "Fonctionne grâce à de l’électricité et à un programme.", boite: "machine", e: "C’est un système technique : sans énergie ni programme, rien ne se passe." },
+    { t: "Peut changer d’avis par lui-même.", boite: "vivant", e: "Une machine ne décide pas, elle exécute." },
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  function annoncer(t) { $("annonce").textContent = ""; setTimeout(() => { $("annonce").textContent = t; }, 50); }
+  function montrer(id) { ["accueil", "partie", "fin"].forEach((s) => { $(s).hidden = s !== id; }); window.scrollTo(0, 0); }
+
+  let pile, points, rangees, dejaRatees, actuelle;
+
+  function demarrer() {
+    pile = CARTES.map((c, i) => i);
+    points = 0; rangees = { vivant: 0, deux: 0, machine: 0 }; dejaRatees = new Set();
+    majBoites(); $("points").textContent = "0";
+    montrer("partie");
+    carteSuivante();
+  }
+
+  function majBoites() {
+    for (const b of Object.keys(NOMS)) $("nb-" + b).textContent = rangees[b] + (rangees[b] > 1 ? " cartes" : " carte");
+  }
+
+  function carteSuivante() {
+    if (pile.length === 0) return terminer();
+    actuelle = pile.shift();
+    const c = CARTES[actuelle];
+    $("carte-num").textContent = dejaRatees.has(actuelle) ? "Carte à réessayer" : "Carte " + (actuelle + 1);
+    $("carte-texte").textContent = c.t;
+    $("compteur").textContent = "Cartes restantes : " + (pile.length + 1);
+    const carte = $("carte"); carte.classList.remove("apparait"); void carte.offsetWidth; carte.classList.add("apparait");
+    $("feedback").className = "feedback"; $("feedback").innerHTML = "";
+    $("zone-suivante").hidden = true;
+    document.querySelectorAll(".boite").forEach((b) => { b.disabled = false; });
+    document.querySelector(".boite").focus();
+  }
+
+  function choisir(boite) {
+    const c = CARTES[actuelle];
+    const fb = $("feedback");
+    document.querySelectorAll(".boite").forEach((b) => { b.disabled = true; });
+    fb.innerHTML = "";
+    if (boite === c.boite) {
+      rangees[boite]++;
+      if (!dejaRatees.has(actuelle)) points++;
+      $("points").textContent = points;
+      majBoites();
+      const el = document.querySelector('.boite[data-boite="' + boite + '"]');
+      el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse");
+      fb.className = "feedback bon";
+      const v = document.createElement("p");
+      v.innerHTML = '<span class="verdict">Bien rangé !</span> Cette carte va dans « ' + NOMS[boite] + " ».";
+      fb.append(v, Object.assign(document.createElement("p"), { textContent: c.e }));
+    } else {
+      dejaRatees.add(actuelle);
+      pile.push(actuelle);
+      fb.className = "feedback faux";
+      const v = document.createElement("p");
+      v.innerHTML = '<span class="verdict">Pas encore.</span> Ce n’est pas « ' + NOMS[boite] + " ».";
+      fb.append(v, Object.assign(document.createElement("p"), { textContent: "Demande-toi : est-ce que ça ressent, grandit ou décide (vivant) ? Est-ce que ça calcule, stocke ou exécute (machine) ? Ou les deux peuvent-ils le faire ? Cette carte reviendra plus tard." }));
+    }
+    $("carte-suivante").textContent = pile.length === 0 ? "Voir mon résultat" : "Carte suivante";
+    $("zone-suivante").hidden = false;
+    fb.focus();
+  }
+
+  function terminer() {
+    const total = CARTES.length;
+    const nb = Progression.etoiles(points, total);
+    Progression.enregistrer(MISSION, CLE, { points, total, etoiles: nb });
+    Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+    $("etoiles").innerHTML = [1, 2, 3].map((i) => '<span class="' + (i <= nb ? "pleine" : "vide") + '">★</span>').join("");
+    $("score-final").textContent = points + " cartes bien rangées du premier coup sur " + total + " · " + nb + " étoile" + (nb > 1 ? "s" : "") + " sur 3";
+    $("message-final").textContent = nb === 3
+      ? "Excellent ! Tu sais faire la différence entre le vivant et la machine. Noah peut avancer dans le labyrinthe."
+      : nb === 2 ? "Bien joué ! Relis le résumé ci-dessous, surtout la boîte « Les deux »."
+      : "Tu as rangé toutes les cartes, bravo pour ta persévérance ! Relis le résumé ci-dessous, puis rejoue si tu veux gagner plus d’étoiles.";
+    montrer("fin"); $("titre-fin").focus();
+    annoncer("Jeu terminé. " + $("score-final").textContent);
+  }
+
+  document.querySelectorAll(".boite").forEach((b) => b.addEventListener("click", () => choisir(b.dataset.boite)));
+  $("carte-suivante").addEventListener("click", carteSuivante);
+  $("commencer").addEventListener("click", demarrer);
+  $("rejouer").addEventListener("click", demarrer);
+  Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+</script>
+</body>
+</html>
