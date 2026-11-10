@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeu 1 – Portraits sur commande · Mission 3 · Le Voyage de Noah</title>
+<link rel="stylesheet" href="../../commun/labyrinthe.css">
+<style>
+  .infos-partie { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--texte-doux); font-weight: 600; margin-bottom: 14px; }
+  .infos-partie strong { color: var(--texte); }
+  .jeu { display: grid; grid-template-columns: 300px 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 860px) { .jeu { grid-template-columns: 1fr; } }
+
+  .menu h3 { color: var(--cyan); }
+  .menu ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+  .commande { width: 100%; text-align: left; font: inherit; color: var(--texte); cursor: pointer; background: rgba(255,255,255,.05); border: 2px solid var(--bord); border-radius: 10px; padding: 10px 12px; }
+  .commande:hover:not([disabled]) { border-color: var(--cyan); background: rgba(142,202,230,.12); }
+  .commande[disabled] { cursor: default; color: var(--texte-doux); }
+  .commande .etat { display: block; font-size: 13px; font-weight: 800; margin-top: 2px; color: var(--neon); }
+
+  /* Galerie */
+  .galerie-titre { margin: 0 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--violet); font-weight: 800; }
+  .demande { margin: 0 0 12px; font-weight: 800; font-size: 18px; }
+  .galerie { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  @media (max-width: 520px) { .galerie { grid-template-columns: repeat(2, 1fr); } }
+  .cadre { border: 4px solid #8A6A2F; outline: 2px solid #C9A45C; outline-offset: -8px; border-radius: 6px; background: #1A1C48; padding: 10px 6px 6px; text-align: center; animation: apparition .35s ease-out both; }
+  .cadre svg { width: 100%; max-width: 110px; border-radius: 3px; height: auto; display: block; margin: 0 auto; }
+  .cadre .etiquette { display: block; margin-top: 6px; font-size: 13px; font-weight: 800; color: var(--texte); background: rgba(255,255,255,.08); border-radius: 4px; padding: 2px 4px; }
+  .vide-galerie { color: var(--texte-doux); }
+  .attente { color: var(--texte-doux); font-style: italic; }
+
+  .decision h3 { margin-top: 0; }
+  .choix-stereo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  @media (max-width: 520px) { .choix-stereo { grid-template-columns: 1fr; } }
+  .choix-stereo { border: 0; padding: 0; margin: 10px 0 0; }
+  .choix-stereo label { display: grid; grid-template-columns: auto 1fr; column-gap: 10px; align-items: center; cursor: pointer; background: rgba(255,255,255,.05); border: 2px solid var(--bord); border-radius: 10px; padding: 10px 12px; }
+  .choix-stereo label span { grid-column: 2; font-size: 14px; color: var(--texte-doux); }
+  .choix-stereo input { width: 20px; height: 20px; grid-row: 1 / span 2; accent-color: var(--neon); }
+  .choix-stereo label:hover { border-color: var(--cyan); }
+  .choix-stereo label.bonne { border-color: var(--neon); background: rgba(91,227,166,.12); }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <p class="fil">Le Voyage de Noah · Chapitre 3 · Mission 3 : La galerie des portraits</p>
+  <nav class="couloir" id="couloir" aria-label="Progression dans la mission"></nav>
+</div>
+
+<main>
+  <p class="sr-only" id="annonce" aria-live="polite"></p>
+
+  <!-- ========== ACCUEIL ========== -->
+  <section id="accueil" aria-labelledby="titre-jeu">
+    <div class="banniere">
+      <img src="../../commun/labyrinthe.jpg" alt="">
+      <span class="credit">Image réalisée avec une intelligence artificielle</span>
+      <div class="texte">
+        <h1 id="titre-jeu" tabindex="-1">Jeu 1 : Portraits sur commande</h1>
+        <p class="objectif">Objectif : repérer un stéréotype dans des images générées par une IA.</p>
+        <p class="duree">Durée : 6 min</p>
+      </div>
+    </div>
+
+    <div class="noah">
+      <div class="avatar" aria-hidden="true"></div>
+      <p class="bulle"><strong>Noah :</strong> « J’arrive dans la galerie des portraits. Les cadres sont remplis par une IA : on lui passe une commande, elle peint le portrait… Mais j’ai l’impression que ses tableaux se ressemblent tous. Regardons ça de plus près ! »</p>
+    </div>
+
+    <div class="consigne">
+      <h2>Consigne</h2>
+      <p>Choisis une commande dans le menu : l’IA remplit 8 cadres. Regarde les visages et leur âge, puis coche <strong>les stéréotypes que tu vois</strong> : genre, âge, couleur de peau… ou aucun. Plusieurs réponses sont possibles. Il y a 9 commandes.</p>
+    </div>
+
+    <div class="memo">
+      <strong>Un stéréotype</strong>, c’est une idée toute faite sur un groupe de personnes : « les pilotes sont des hommes », « les personnes âgées ne savent pas utiliser un smartphone », « les chefs d’entreprise sont blancs »… Une IA peut en reproduire quand elle génère des images.
+    </div>
+
+    <div class="actions centre">
+      <button class="btn" id="commencer" type="button">Entrer dans la galerie</button>
+    </div>
+  </section>
+
+  <!-- ========== PARTIE ========== -->
+  <section id="partie" aria-labelledby="titre-partie" hidden>
+    <h2 id="titre-partie" tabindex="-1" class="sr-only">La galerie des portraits</h2>
+    <div class="infos-partie">
+      <span id="compteur"></span>
+      <span>Points : <strong id="points">0</strong> / 9</span>
+    </div>
+
+    <div class="jeu">
+      <div class="verre menu">
+        <h3>Passe une commande à l’IA</h3>
+        <ul id="menu"></ul>
+      </div>
+
+      <div>
+        <div class="verre" id="zone-galerie" aria-live="polite">
+          <p class="galerie-titre">Galerie générée par l’IA</p>
+          <p class="vide-galerie" id="vide">Choisis une commande dans le menu.</p>
+          <p class="demande" id="demande" hidden></p>
+          <ul class="galerie" id="galerie"></ul>
+        </div>
+
+        <div class="verre decision" id="decision" hidden style="margin-top:14px">
+          <h3 id="titre-decision" tabindex="-1">Quels stéréotypes vois-tu ?</h3>
+          <p style="margin:0">Plusieurs réponses possibles.</p>
+          <fieldset class="choix-stereo" id="choix">
+            <legend class="sr-only">Quels stéréotypes vois-tu ?</legend>
+            <label><input type="checkbox" value="genre"> <strong>Genre</strong><span>Toujours le même genre</span></label>
+            <label><input type="checkbox" value="age"> <strong>Âge</strong><span>Toujours la même tranche d’âge</span></label>
+            <label><input type="checkbox" value="peau"> <strong>Couleur de peau</strong><span>Toujours la même couleur de peau</span></label>
+            <label><input type="checkbox" value="aucun"> <strong>Aucun</strong><span>La galerie est variée</span></label>
+          </fieldset>
+          <div class="actions"><button class="btn" id="valider" type="button">Valider</button></div>
+          <div class="feedback" id="feedback" tabindex="-1"></div>
+          <div class="actions" id="zone-suivante" hidden>
+            <button class="btn" id="suivante" type="button">Commande suivante</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FIN DU JEU ========== -->
+  <section id="fin" class="fin" aria-labelledby="titre-fin" hidden>
+    <h2 id="titre-fin" tabindex="-1">Porte ouverte !</h2>
+    <p class="etoiles" id="etoiles" aria-hidden="true"></p>
+    <p class="score-grand" id="score-final"></p>
+    <p id="message-final"></p>
+
+    <div class="verre">
+      <h3>Ce que tu as appris</h3>
+      <p style="margin:0 0 8px">Quand on lui commande un portrait, une IA génère ce qu’elle a vu <strong>le plus souvent</strong> dans ses données. Résultat : elle peut reproduire des <strong>stéréotypes</strong> de genre, d’âge ou de couleur de peau, parfois plusieurs à la fois, et les répéter des milliers de fois.</p>
+      <p style="margin:0">Une IA n’est pas biaisée à chaque fois… mais il faut toujours <strong>regarder</strong> ce qu’elle montre, et se demander : « Qui manque dans cette galerie ? »</p>
+    </div>
+
+    <div class="actions centre">
+      <button class="btn secondaire" id="rejouer" type="button">Rejouer</button>
+      <a class="btn" href="../jeu2/">Jeu suivant : D’où vient le biais ?</a>
+    </div>
+  </section>
+</main>
+
+<script src="../../commun/progression.js"></script>
+<script src="../../commun/portraits.js"></script>
+<script>
+  const MISSION = "mission3", CLE = "jeu1";
+  const NOMS = { genre: "genre", age: "âge", peau: "couleur de peau", aucun: "aucun" };
+  const PEAUX = ["très claire", "claire", "mate", "brune", "foncée", "très foncée"];
+  // Chaque portrait : [genre ("F" ou "H"), âge, couleur de peau (0 = très claire … 5 = très foncée)]
+  const COMMANDES = [
+    { t: "Une personne qui dirige une entreprise", rep: ["genre", "peau"], tenue: "costume",
+      p: [["H", 35, 0], ["H", 58, 1], ["H", 44, 0], ["H", 62, 1], ["H", 39, 0], ["H", 51, 0], ["H", 47, 1], ["H", 56, 0]],
+      e: "Des femmes et des personnes de toutes origines dirigent aussi des entreprises. L’IA reproduit ce qu’elle a vu le plus souvent dans ses données." },
+    { t: "Une personne qui soigne les patients à l’hôpital", rep: ["genre"], tenue: "hopital",
+      p: [["F", 24, 3], ["F", 52, 0], ["F", 31, 5], ["F", 45, 1], ["F", 28, 4], ["F", 58, 2], ["F", 37, 0], ["F", 41, 5]],
+      e: "Il y a des infirmiers et des infirmières. L’IA a associé « soigner » aux femmes." },
+    { t: "Une personne qui pilote un avion", rep: ["genre", "peau"], tenue: "pilote",
+      p: [["H", 29, 0], ["H", 54, 1], ["H", 38, 0], ["H", 47, 0], ["H", 33, 1], ["H", 58, 0], ["H", 42, 1], ["H", 36, 0]],
+      e: "Des femmes et des personnes de toutes origines pilotent aussi des avions." },
+    { t: "Une personne qui fait de la recherche scientifique", rep: ["genre", "age"], tenue: "labo",
+      p: [["H", 65, 5], ["H", 68, 3], ["H", 62, 1], ["H", 70, 0], ["H", 66, 4], ["H", 64, 2], ["H", 69, 0], ["H", 67, 3]],
+      e: "Des scientifiques de tous âges et de tous genres font de la recherche." },
+    { t: "Une personne qui fait le ménage dans des bureaux", rep: ["genre", "peau"], tenue: "tablier",
+      p: [["F", 27, 4], ["F", 45, 5], ["F", 38, 4], ["F", 52, 5], ["F", 31, 5], ["F", 48, 4], ["F", 35, 5], ["F", 58, 4]],
+      e: "L’IA associe certains métiers peu valorisés à des femmes à la peau foncée. C’est un préjugé présent dans ses données, pas la réalité : des personnes de toutes origines et de tous genres font ce métier." },
+    { t: "Une personne qui apprend à utiliser un smartphone", rep: ["age"], tenue: "smartphone",
+      p: [["F", 74, 1], ["H", 78, 4], ["F", 71, 0], ["H", 76, 3], ["F", 80, 5], ["H", 72, 2], ["F", 77, 0], ["H", 75, 4]],
+      e: "On peut apprendre à tout âge, et beaucoup de personnes âgées utilisent déjà un smartphone." },
+    { t: "Une personne qui crée des jeux vidéo", rep: ["genre", "age", "peau"], tenue: "sweat",
+      p: [["H", 22, 0], ["H", 25, 1], ["H", 27, 0], ["H", 23, 0], ["H", 26, 1], ["H", 24, 0], ["H", 28, 1], ["H", 21, 0]],
+      e: "Trois stéréotypes à la fois ! Des femmes, des personnes de tous âges et de toutes origines créent des jeux vidéo." },
+    { t: "Une personne qui fait du sport extrême", rep: ["age"], tenue: "sport",
+      p: [["F", 19, 2], ["H", 22, 5], ["F", 24, 0], ["H", 18, 3], ["F", 21, 1], ["H", 25, 4], ["F", 23, 5], ["H", 20, 0]],
+      e: "Le sport extrême n’a pas d’âge : on peut faire du skate, du surf ou de l’escalade à 40 ou 60 ans." },
+    { t: "Une personne qui enseigne au collège", rep: ["aucun"], tenue: "chemise",
+      p: [["F", 28, 1], ["H", 45, 4], ["F", 52, 0], ["H", 33, 5], ["F", 39, 3], ["H", 58, 2], ["F", 26, 0], ["H", 41, 4]],
+      e: "Cette galerie est variée. Une IA n’est pas biaisée à chaque fois, mais il faut toujours regarder." },
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const reduit = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function annoncer(t) { $("annonce").textContent = ""; setTimeout(() => { $("annonce").textContent = t; }, 50); }
+  function montrer(id) { ["accueil", "partie", "fin"].forEach((s) => { $(s).hidden = s !== id; }); window.scrollTo(0, 0); }
+  function el(tag, cls, texte) { const e = document.createElement(tag); if (cls) e.className = cls; if (texte) e.textContent = texte; return e; }
+
+  let points, faites, actuelle, ratee;
+
+  function demarrer() { points = 0; faites = new Set(); $("points").textContent = "0"; majCompteur(); dessinerMenu(); viderGalerie(); montrer("partie"); $("menu").querySelector("button").focus(); }
+
+  function majCompteur() { $("compteur").textContent = "Commandes passées : " + faites.size + " / " + COMMANDES.length; }
+
+  function dessinerMenu(enCours) {
+    const ul = $("menu"); ul.innerHTML = "";
+    COMMANDES.forEach((c, i) => {
+      const b = el("button", "commande"); b.type = "button";
+      b.append("Portrait : " + c.t.charAt(0).toLowerCase() + c.t.slice(1));
+      if (faites.has(i)) { b.append(el("span", "etat", "Analysée : " + c.rep.map((r) => NOMS[r]).join(" + "))); b.disabled = true; }
+      else if (enCours) b.disabled = true;
+      b.addEventListener("click", () => commander(i));
+      const li = el("li"); li.append(b); ul.append(li);
+    });
+  }
+
+  function viderGalerie() { $("vide").hidden = false; $("demande").hidden = true; $("galerie").innerHTML = ""; $("decision").hidden = true; }
+
+  function commander(i) {
+    actuelle = i; ratee = false;
+    dessinerMenu(true);
+    const c = COMMANDES[i];
+    $("vide").hidden = true;
+    $("demande").hidden = false;
+    $("demande").textContent = "Commande : « " + c.t + " »";
+    const g = $("galerie"); g.innerHTML = "";
+    $("decision").hidden = true;
+    if (!reduit) g.append(el("li", "attente", "L’IA peint les portraits…"));
+    setTimeout(() => {
+      g.innerHTML = "";
+      c.p.forEach(([genre, age, peau], k) => {
+        const li = el("li", "cadre");
+        li.style.animationDelay = (reduit ? 0 : k * 0.08) + "s";
+        const img = Portraits.svg({ genre, age, peau, tenue: c.tenue }, k + actuelle * 3);
+        li.setAttribute("aria-label", "Portrait : " + (genre === "F" ? "femme" : "homme") + ", " + age + " ans, peau " + PEAUX[peau]);
+        li.append(img, el("span", "etiquette", age + " ans"));
+        g.append(li);
+      });
+      ouvrirDecision();
+    }, reduit ? 0 : 700);
+  }
+
+  function cases() { return Array.from($("choix").querySelectorAll("input")); }
+
+  function ouvrirDecision() {
+    cases().forEach((c) => { c.checked = false; c.disabled = false; c.parentElement.classList.remove("bonne"); });
+    $("valider").disabled = false;
+    $("feedback").className = "feedback"; $("feedback").innerHTML = "";
+    $("zone-suivante").hidden = true;
+    $("decision").hidden = false;
+    $("titre-decision").focus();
+    const c = COMMANDES[actuelle];
+    annoncer("Galerie générée pour : " + c.t + ". " + c.p.map(([g, a, pe]) => (g === "F" ? "femme" : "homme") + " " + a + " ans, peau " + PEAUX[pe]).join(" ; ") + ".");
+  }
+
+  // « Aucun » ne se coche pas en même temps que les autres
+  function gererAucun(e) {
+    if (e.target.value === "aucun" && e.target.checked) cases().forEach((c) => { if (c.value !== "aucun") c.checked = false; });
+    else if (e.target.checked) cases().find((c) => c.value === "aucun").checked = false;
+  }
+
+  function valider() {
+    const c = COMMANDES[actuelle];
+    const fb = $("feedback"); fb.innerHTML = "";
+    const choisis = cases().filter((x) => x.checked).map((x) => x.value);
+    if (choisis.length === 0) { fb.className = "feedback info"; fb.append(el("p", null, "Coche au moins une case.")); fb.focus(); return; }
+    const manquants = c.rep.filter((r) => !choisis.includes(r));
+    const enTrop = choisis.filter((r) => !c.rep.includes(r));
+    if (manquants.length || enTrop.length) {
+      ratee = true;
+      fb.className = "feedback faux";
+      const v = el("p"); v.append(el("span", "verdict", "Pas encore. "));
+      if (c.rep.includes("aucun")) v.append("Regarde bien : les genres, les âges et les couleurs de peau sont-ils variés ?");
+      else if (choisis.includes("aucun")) v.append("Il y a au moins un stéréotype dans cette galerie. Regarde les genres, les âges et les couleurs de peau.");
+      else {
+        if (manquants.length) v.append("Il te manque " + (manquants.length > 1 ? manquants.length + " stéréotypes" : "un stéréotype") + ". ");
+        if (enTrop.length) v.append("Une de tes cases ne correspond pas à cette galerie. ");
+        v.append("Regarde les genres, les âges et les couleurs de peau, puis valide à nouveau.");
+      }
+      fb.append(v); fb.focus(); annoncer(fb.textContent); return;
+    }
+    cases().forEach((x) => { x.disabled = true; if (x.checked) x.parentElement.classList.add("bonne"); });
+    $("valider").disabled = true;
+    if (!ratee) points++;
+    faites.add(actuelle);
+    $("points").textContent = points; majCompteur();
+    fb.className = "feedback bon";
+    const plusieurs = c.rep.length > 1;
+    const v = el("p");
+    v.append(el("span", "verdict", (c.rep[0] === "aucun" ? "Bien vu, pas de stéréotype ici !" : "Stéréotype" + (plusieurs ? "s" : "") + " repéré" + (plusieurs ? "s" : "") + " : " + c.rep.map((r) => NOMS[r]).join(" + ") + " !") + (ratee ? "" : " +1 point")));
+    fb.append(v, el("p", null, c.e));
+    $("suivante").textContent = faites.size === COMMANDES.length ? "Voir mon résultat" : "Commande suivante";
+    $("zone-suivante").hidden = false;
+    dessinerMenu(true);
+    fb.focus(); annoncer(fb.textContent);
+  }
+
+  function suite() {
+    if (faites.size === COMMANDES.length) return terminer();
+    dessinerMenu(); viderGalerie();
+    $("menu").querySelector("button:not([disabled])").focus();
+  }
+
+  function terminer() {
+    const total = COMMANDES.length;
+    const nb = Progression.etoiles(points, total);
+    Progression.enregistrer(MISSION, CLE, { points, total, etoiles: nb });
+    Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+    $("etoiles").innerHTML = [1, 2, 3].map((i) => '<span class="' + (i <= nb ? "pleine" : "vide") + '">★</span>').join("");
+    $("score-final").textContent = points + " stéréotypes bien analysés du premier coup sur " + total + " · " + nb + " étoile" + (nb > 1 ? "s" : "") + " sur 3";
+    $("message-final").textContent = nb === 3
+      ? "Excellent ! Aucun stéréotype ne t’échappe. Noah peut avancer dans la galerie."
+      : nb === 2 ? "Bien joué ! Relis le résumé ci-dessous : regarde toujours les genres, les âges ET les couleurs de peau."
+      : "Tu as analysé toute la galerie, bravo pour ta persévérance ! Relis le résumé ci-dessous, puis rejoue si tu veux gagner plus d’étoiles.";
+    montrer("fin"); $("titre-fin").focus();
+    annoncer("Jeu terminé. " + $("score-final").textContent);
+  }
+
+  cases().forEach((c) => c.addEventListener("change", gererAucun));
+  $("valider").addEventListener("click", valider);
+  $("suivante").addEventListener("click", suite);
+  $("commencer").addEventListener("click", demarrer);
+  $("rejouer").addEventListener("click", demarrer);
+  Progression.dessinerCouloir($("couloir"), MISSION, CLE);
+</script>
+</body>
+</html>

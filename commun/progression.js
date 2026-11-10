@@ -23,6 +23,16 @@ const Progression = (() => {
         { cle: "jeu4", nom: "Les bons verbes", lien: "../jeu4/" },
         { cle: "bilan", nom: "Bilan", lien: "../bilan/" }
       ]
+    },
+    mission3: {
+      titre: "Mission 3 : La galerie des portraits",
+      etapes: [
+        { cle: "jeu1", nom: "Portraits sur commande", lien: "../jeu1/" },
+        { cle: "jeu2", nom: "D’où vient le biais ?", lien: "../jeu2/" },
+        { cle: "jeu3", nom: "Répare la base", lien: "../jeu3/" },
+        { cle: "jeu4", nom: "Le bon prompt", lien: "../jeu4/" },
+        { cle: "bilan", nom: "Bilan", lien: "../bilan/" }
+      ]
     }
   };
 
